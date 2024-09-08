@@ -1,0 +1,12 @@
+{
+  "background": {
+    "service_worker": "pages/background/index.js"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.github.com/*",
+    "https://*.atlassian.net/*"
+  ]
+}
