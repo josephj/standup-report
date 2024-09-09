@@ -13,8 +13,6 @@
       "../../vite-env.d.ts"
     ]
   },
-  "paths": {
-  },
   "include": [
     "src"
   ]
