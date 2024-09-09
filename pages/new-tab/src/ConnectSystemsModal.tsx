@@ -35,7 +35,7 @@ interface SystemConfig {
   connectFunction: (token: string, url?: string) => Promise<boolean>;
   tokenGuideUrl: string;
   requiresUrl?: boolean;
-  additionalSettings?: React.ReactNode;
+  placeholder?: string;
 }
 
 const systems: SystemConfig[] = [
@@ -76,6 +76,25 @@ const systems: SystemConfig[] = [
     },
     tokenGuideUrl: 'https://id.atlassian.com/manage-profile/security/api-tokens',
     requiresUrl: true,
+  },
+  {
+    name: 'OpenAI',
+    connectFunction: async (token: string) => {
+      try {
+        const response = await fetch('https://api.openai.com/v1/models', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        return response.ok;
+      } catch (error) {
+        console.error('Error validating OpenAI token:', error);
+        return false;
+      }
+    },
+    tokenGuideUrl: 'https://platform.openai.com/account/api-keys',
+    placeholder: 'sk-...',
+    requiresUrl: false,
   },
 ];
 
@@ -161,6 +180,7 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
       const token = tokens[system.name];
       const url = urls[system.name];
       if (token && (!system.requiresUrl || url)) {
+        console.log('system :', system);
         chrome.storage.local.set({
           [`${system.name.toLowerCase()}Token`]: token,
           ...(system.requiresUrl && { [`${system.name.toLowerCase()}Url`]: url }),
@@ -207,7 +227,7 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
                       type="password"
                       value={tokens[system.name] || ''}
                       onChange={e => handleTokenChange(system, e.target.value)}
-                      placeholder={`Enter ${system.name} API Token`}
+                      placeholder={system.placeholder || `Enter ${system.name} API Token`}
                       isDisabled={system.requiresUrl && !urls[system.name]}
                     />
                     <InputRightElement>

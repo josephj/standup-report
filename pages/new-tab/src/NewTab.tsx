@@ -17,14 +17,15 @@ import {
   ChakraProvider,
   extendTheme,
   Link,
+  Textarea,
 } from '@chakra-ui/react';
-import {} from '@chakra-ui/icons';
 import { ExternalLinkIcon, SettingsIcon } from '@chakra-ui/icons';
 import { t } from '@extension/i18n';
 import { ConnectSystemsModal } from './ConnectSystemsModal';
 import axios from 'axios';
 import { Octokit } from '@octokit/rest';
 import { formatDistanceToNow } from 'date-fns';
+import promptTemplate from './prompt.md?raw';
 
 interface WorkItem {
   type: 'Jira' | 'GitHub';
@@ -59,6 +60,9 @@ const NewTab: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [connectedSystems, setConnectedSystems] = useState<string[]>([]);
+  const [aiGeneratedReport, setAiGeneratedReport] = useState<string>('');
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const fetchWorkItems = useCallback(async () => {
     setIsLoading(true);
@@ -198,6 +202,64 @@ const NewTab: React.FC = () => {
     </List>
   );
 
+  const callOpenAI = async (prompt: string) => {
+    const { openaiToken } = await chrome.storage.local.get('openaiToken');
+    console.log('openaiApiKey :', openaiToken);
+    if (!openaiToken) {
+      console.error('OpenAI API key not found');
+      setAiGeneratedReport('Error: OpenAI API key not found. Please set up your API key in the extension settings.');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${openaiToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      const generatedText = response.data.choices[0].message.content;
+      setAiGeneratedReport(generatedText);
+    } catch (error) {
+      console.error('Error calling OpenAI:', error);
+      setAiGeneratedReport('Error: Failed to generate report. Please check your API key and try again.');
+    }
+  };
+
+  const generateStandupReport = useCallback(async () => {
+    setIsGeneratingReport(true);
+    setAiGeneratedReport('');
+
+    const workItemsText = workItems
+      .map(item => `${item.type}: ${item.title} (${item.status || 'No status'}) - Updated: ${item.updatedAt}`)
+      .join('\n');
+
+    const fullPrompt = `${promptTemplate}\n\nWork items:\n${workItemsText}`;
+
+    try {
+      await callOpenAI(fullPrompt);
+    } catch (error) {
+      console.error('Error generating report:', error);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  }, [workItems]);
+
+  useEffect(() => {
+    if (workItems.length > 0) {
+      generateStandupReport();
+    }
+  }, [workItems, generateStandupReport]);
+
   return (
     <ChakraProvider theme={theme}>
       <Box minHeight="100vh" p={8}>
@@ -208,6 +270,7 @@ const NewTab: React.FC = () => {
               <IconButton aria-label="Manage Connections" icon={<SettingsIcon />} onClick={onOpen} variant="outline" />
             </Tooltip>
           </Flex>
+
           {isLoading ? (
             <Center>
               <Spinner size="xl" />
@@ -226,16 +289,25 @@ const NewTab: React.FC = () => {
                 </Heading>
                 {renderWorkItems(workItems, true)}
               </Box>
+              <Box>
+                <Heading size="md" mb={2}>
+                  Summary
+                </Heading>
+                {isGeneratingReport ? (
+                  <Spinner size="xl" />
+                ) : (
+                  <Textarea value={aiGeneratedReport} height={400} isReadOnly />
+                )}
+              </Box>
             </>
           )}
         </VStack>
+
         <ConnectSystemsModal
           isOpen={isOpen}
           onClose={onClose}
-          onConnect={() => {
-            fetchWorkItems();
-          }}
-          connectedSystems={[]}
+          onConnect={setConnectedSystems}
+          connectedSystems={connectedSystems}
         />
       </Box>
     </ChakraProvider>
