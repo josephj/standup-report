@@ -19,7 +19,7 @@ import {
   Link,
   Button,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, SettingsIcon } from '@chakra-ui/icons';
+import { ExternalLinkIcon, SettingsIcon, TimeIcon, WarningIcon } from '@chakra-ui/icons';
 import { t } from '@extension/i18n';
 import { ConnectSystemsModal } from './ConnectSystemsModal';
 import axios from 'axios';
@@ -56,6 +56,13 @@ const theme = extendTheme({
   config: {
     initialColorMode: 'light',
     useSystemColorMode: false,
+  },
+  styles: {
+    global: {
+      body: {
+        bg: 'linear-gradient(45deg, #f3e7e9 0%, #e3eeff 99%, #e3eeff 100%)',
+      },
+    },
   },
 });
 
@@ -175,11 +182,11 @@ const NewTab: React.FC = () => {
       {items
         .filter(item => item.isStale === isStale)
         .map((item, index) => (
-          <ListItem key={index} p={3} borderWidth={1} borderRadius="md">
+          <ListItem key={index} p={3} borderWidth={1} borderRadius="md" bg="white" boxShadow="sm">
             <Flex justifyContent="space-between" alignItems="center">
               <Flex alignItems="center" flexGrow={1} mr={2} minWidth={0}>
                 <Badge colorScheme={item.type === 'Jira' ? 'blue' : 'green'} mr={2} flexShrink={0}>
-                  {item.type}
+                  {item.type === 'Jira' ? '🎟️' : '🐙'} {item.type}
                 </Badge>
                 <Text fontWeight="medium" isTruncated maxWidth="calc(100% - 100px)">
                   <Link href={item.url} isExternal color="blue.500">
@@ -187,7 +194,7 @@ const NewTab: React.FC = () => {
                   </Link>
                   {item.type === 'GitHub' && item.isDraft && (
                     <Badge ml={2} colorScheme="orange" flexShrink={0}>
-                      Draft
+                      📝 Draft
                     </Badge>
                   )}
                 </Text>
@@ -198,7 +205,8 @@ const NewTab: React.FC = () => {
                 )}
               </Flex>
               <Text fontSize="sm" color="gray.500" flexShrink={0}>
-                Updated: {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
+                <TimeIcon mr={1} />
+                {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
               </Text>
             </Flex>
           </ListItem>
@@ -302,20 +310,21 @@ const NewTab: React.FC = () => {
         <Box maxWidth="1400px" width="100%">
           <VStack spacing={8} align="stretch">
             <Flex justifyContent="space-between" alignItems="center">
-              <Heading>Stand-up Report</Heading>
+              <Heading>📋 Stand-up Report</Heading>
               <Tooltip label="Manage Connections" aria-label="Manage Connections">
                 <IconButton
                   aria-label="Manage Connections"
                   icon={<SettingsIcon />}
                   onClick={onOpen}
                   variant="outline"
+                  colorScheme="purple"
                 />
               </Tooltip>
             </Flex>
 
             {isLoading ? (
               <Center>
-                <Spinner size="xl" />
+                <Spinner size="xl" color="purple.500" />
               </Center>
             ) : (
               <Flex direction={{ base: 'column', lg: 'row' }} gap={8}>
@@ -323,13 +332,13 @@ const NewTab: React.FC = () => {
                   <VStack spacing={8} align="stretch">
                     <Box>
                       <Heading size="md" mb={4}>
-                        Recent Updates
+                        🔥 Recent Updates
                       </Heading>
                       {renderWorkItems(workItems, false)}
                     </Box>
                     <Box>
                       <Heading size="md" mb={4}>
-                        Stale Items
+                        ⏳ Stale Items
                       </Heading>
                       {renderWorkItems(workItems, true)}
                     </Box>
@@ -337,15 +346,17 @@ const NewTab: React.FC = () => {
                 </Box>
                 <Box flex="1">
                   <Heading size="md" mb={2}>
-                    Summary
+                    📊 Summary
                   </Heading>
                   <Box
                     height="calc(100% - 40px)"
                     overflowY="auto"
                     border="1px solid"
-                    borderColor="gray.200"
+                    borderColor="purple.200"
                     borderRadius="md"
-                    p={4}>
+                    p={4}
+                    bg="white"
+                    boxShadow="md">
                     <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
                     </HtmlContent>
@@ -358,8 +369,9 @@ const NewTab: React.FC = () => {
                           abortControllerRef.current.abort();
                           setIsGeneratingReport(false);
                         }
-                      }}>
-                      Stop Generating
+                      }}
+                      colorScheme="red">
+                      🛑 Stop Generating
                     </Button>
                   )}
                 </Box>
