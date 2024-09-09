@@ -33,13 +33,16 @@
     "date-fns": "^2.30.0",
     "framer-motion": "^11.5.4",
     "langchain": "^0.2.18",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
     "@extension/tailwindcss-config": "workspace:*",
     "@extension/tsconfig": "workspace:*",
     "@extension/vite-config": "workspace:*",
     "@types/lodash": "^4.17.7",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "cross-env": "^7.0.3",
     "postcss-load-config": "^6.0.1",
     "sass": "1.77.8"

@@ -17,7 +17,6 @@ import {
   ChakraProvider,
   extendTheme,
   Link,
-  Textarea,
   Button,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, SettingsIcon } from '@chakra-ui/icons';
@@ -27,6 +26,9 @@ import axios from 'axios';
 import { Octokit } from '@octokit/rest';
 import { formatDistanceToNow } from 'date-fns';
 import promptTemplate from './prompt.md?raw';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { HtmlContent } from './html-content';
 
 interface WorkItem {
   type: 'Jira' | 'GitHub';
@@ -176,14 +178,10 @@ const NewTab: React.FC = () => {
           <ListItem key={index} p={3} borderWidth={1} borderRadius="md">
             <Flex justifyContent="space-between" alignItems="center">
               <Flex alignItems="center" flexGrow={1} mr={2} minWidth={0}>
-                {' '}
-                {/* 添加 minWidth={0} */}
                 <Badge colorScheme={item.type === 'Jira' ? 'blue' : 'green'} mr={2} flexShrink={0}>
                   {item.type}
                 </Badge>
                 <Text fontWeight="medium" isTruncated maxWidth="calc(100% - 100px)">
-                  {' '}
-                  {/* 修改这里 */}
                   <Link href={item.url} isExternal color="blue.500">
                     {item.title} <ExternalLinkIcon mx="2px" />
                   </Link>
@@ -341,12 +339,17 @@ const NewTab: React.FC = () => {
                   <Heading size="md" mb={2}>
                     Summary
                   </Heading>
-                  <Textarea
-                    value={aiGeneratedReport}
+                  <Box
                     height="calc(100% - 40px)"
-                    isReadOnly
-                    placeholder="The summary will appear here once generated."
-                  />
+                    overflowY="auto"
+                    border="1px solid"
+                    borderColor="gray.200"
+                    borderRadius="md"
+                    p={4}>
+                    <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
+                    </HtmlContent>
+                  </Box>
                   {isGeneratingReport && (
                     <Button
                       mt={2}

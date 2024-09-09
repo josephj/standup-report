@@ -1,8 +1,10 @@
 import { createRoot } from 'react-dom/client';
-import '@src/index.css';
-import '@extension/ui/lib/global.css';
+// import '@src/index.css';
+// import '@extension/ui/lib/global.css';
 import { ChakraProvider } from '@chakra-ui/react';
 import NewTab from '@src/NewTab';
+import { chakraTheme } from './chakra-theme';
+console.log('chakraTheme :', chakraTheme);
 
 function init() {
   const appContainer = document.querySelector('#app-container');
@@ -12,7 +14,7 @@ function init() {
   const root = createRoot(appContainer);
 
   root.render(
-    <ChakraProvider>
+    <ChakraProvider theme={chakraTheme}>
       <NewTab />
     </ChakraProvider>,
   );
