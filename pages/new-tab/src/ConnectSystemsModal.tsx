@@ -85,56 +85,28 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
   onConnect,
   connectedSystems,
 }) => {
-  const [localConnectedSystems, setLocalConnectedSystems] = useState<string[]>(connectedSystems);
   const [tokens, setTokens] = useState<Record<string, string>>({});
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [tokenValidation, setTokenValidation] = useState<Record<string, boolean | null>>({});
   const [isValidating, setIsValidating] = useState<Record<string, boolean>>({});
+  const [initialTokens, setInitialTokens] = useState<Record<string, string>>({});
+  const [initialUrls, setInitialUrls] = useState<Record<string, string>>({});
   const toast = useToast();
 
   useEffect(() => {
-    // 从本地存储读取保存的token和URL
     systems.forEach(system => {
       chrome.storage.local.get([`${system.name.toLowerCase()}Token`, `${system.name.toLowerCase()}Url`], result => {
         if (result[`${system.name.toLowerCase()}Token`]) {
           setTokens(prev => ({ ...prev, [system.name]: result[`${system.name.toLowerCase()}Token`] }));
+          setInitialTokens(prev => ({ ...prev, [system.name]: result[`${system.name.toLowerCase()}Token`] }));
         }
         if (result[`${system.name.toLowerCase()}Url`]) {
           setUrls(prev => ({ ...prev, [system.name]: result[`${system.name.toLowerCase()}Url`] }));
+          setInitialUrls(prev => ({ ...prev, [system.name]: result[`${system.name.toLowerCase()}Url`] }));
         }
       });
     });
   }, []);
-
-  const saveToStorage = useCallback(
-    (system: SystemConfig, token: string, url?: string) => {
-      chrome.storage.local.set(
-        {
-          [`${system.name.toLowerCase()}Token`]: token,
-          ...(system.requiresUrl && { [`${system.name.toLowerCase()}Url`]: url }),
-        },
-        () => {
-          if (chrome.runtime.lastError) {
-            console.error(`Error saving ${system.name} data:`, chrome.runtime.lastError);
-            toast({
-              title: `Failed to save ${system.name} data`,
-              status: 'error',
-              duration: 3000,
-              isClosable: true,
-            });
-          } else {
-            toast({
-              title: `${system.name} data saved successfully`,
-              status: 'success',
-              duration: 3000,
-              isClosable: true,
-            });
-          }
-        },
-      );
-    },
-    [toast],
-  );
 
   const validateToken = useCallback(
     debounce(async (system: SystemConfig, token: string, url?: string) => {
@@ -148,32 +120,14 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
       try {
         const isValid = await system.connectFunction(token, url);
         setTokenValidation(prev => ({ ...prev, [system.name]: isValid }));
-        if (isValid) {
-          setLocalConnectedSystems(prev => [...prev, system.name]);
-          saveToStorage(system, token, url);
-        } else {
-          toast({
-            title: `Failed to connect to ${system.name}`,
-            status: 'error',
-            duration: 3000,
-            isClosable: true,
-          });
-        }
       } catch (error) {
         setTokenValidation(prev => ({ ...prev, [system.name]: false }));
         console.error(`Error validating ${system.name} token:`, error);
-        toast({
-          title: `Error connecting to ${system.name}`,
-          description: error instanceof Error ? error.message : 'Unknown error',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
       } finally {
         setIsValidating(prev => ({ ...prev, [system.name]: false }));
       }
     }, 500),
-    [saveToStorage, toast],
+    [],
   );
 
   const handleTokenChange = (system: SystemConfig, token: string) => {
@@ -185,7 +139,6 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
   };
 
   const handleUrlChange = (system: SystemConfig, url: string) => {
-    // 移除开头的 "https://" 或 "http://"
     const cleanUrl = url.replace(/^(https?:\/\/)/, '');
     setUrls(prev => ({ ...prev, [system.name]: cleanUrl }));
     setTokenValidation(prev => ({ ...prev, [system.name]: null }));
@@ -194,20 +147,41 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
     }
   };
 
+  const handleClose = () => {
+    setTokens(initialTokens);
+    setUrls(initialUrls);
+    setTokenValidation({});
+    setIsValidating({});
+    onClose();
+  };
+
   const handleSave = () => {
+    const newConnectedSystems: string[] = [];
     systems.forEach(system => {
       const token = tokens[system.name];
       const url = urls[system.name];
       if (token && (!system.requiresUrl || url)) {
-        saveToStorage(system, token, url);
+        chrome.storage.local.set({
+          [`${system.name.toLowerCase()}Token`]: token,
+          ...(system.requiresUrl && { [`${system.name.toLowerCase()}Url`]: url }),
+        });
+        setInitialTokens(prev => ({ ...prev, [system.name]: token }));
+        setInitialUrls(prev => ({ ...prev, [system.name]: url }));
+        newConnectedSystems.push(system.name);
       }
     });
-    onConnect(localConnectedSystems);
+    onConnect(newConnectedSystems);
+    toast({
+      title: 'Settings saved successfully',
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={handleClose}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Settings</ModalHeader>
