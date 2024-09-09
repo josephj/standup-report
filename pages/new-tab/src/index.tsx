@@ -4,7 +4,6 @@ import { createRoot } from 'react-dom/client';
 import { ChakraProvider } from '@chakra-ui/react';
 import NewTab from '@src/NewTab';
 import { chakraTheme } from './chakra-theme';
-console.log('chakraTheme :', chakraTheme);
 
 function init() {
   const appContainer = document.querySelector('#app-container');

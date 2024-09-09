@@ -19,7 +19,7 @@ import {
   Link,
   Button,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, SettingsIcon, TimeIcon, WarningIcon } from '@chakra-ui/icons';
+import { ExternalLinkIcon, SettingsIcon, TimeIcon, StarIcon } from '@chakra-ui/icons';
 import { t } from '@extension/i18n';
 import { ConnectSystemsModal } from './ConnectSystemsModal';
 import axios from 'axios';
@@ -298,12 +298,6 @@ const NewTab: React.FC = () => {
     }
   }, [workItems]);
 
-  useEffect(() => {
-    if (workItems.length > 0) {
-      generateStandupReport();
-    }
-  }, [workItems, generateStandupReport]);
-
   return (
     <ChakraProvider theme={theme}>
       <Box minHeight="100vh" p={8} display="flex" justifyContent="center">
@@ -345,7 +339,7 @@ const NewTab: React.FC = () => {
                   </VStack>
                 </Box>
                 <Box flex="1">
-                  <Heading size="md" mb={2}>
+                  <Heading size="md" mb={4}>
                     📊 Summary
                   </Heading>
                   <Box
@@ -356,14 +350,33 @@ const NewTab: React.FC = () => {
                     borderRadius="md"
                     p={4}
                     bg="white"
-                    boxShadow="md">
-                    <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
-                    </HtmlContent>
+                    boxShadow="md"
+                    position="relative">
+                    {aiGeneratedReport ? (
+                      <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
+                      </HtmlContent>
+                    ) : (
+                      <Flex justifyContent="center" alignItems="flex-start" height="100%" py="32">
+                        <Button
+                          onClick={generateStandupReport}
+                          isLoading={isGeneratingReport}
+                          loadingText="Generating..."
+                          colorScheme="purple"
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<StarIcon />}>
+                          {aiGeneratedReport ? 'Refresh Report' : 'Generate Report'}
+                        </Button>
+                      </Flex>
+                    )}
                   </Box>
                   {isGeneratingReport && (
                     <Button
-                      mt={2}
+                      position="absolute"
+                      bottom={4}
+                      right={4}
+                      size="sm"
                       onClick={() => {
                         if (abortControllerRef.current) {
                           abortControllerRef.current.abort();
@@ -371,7 +384,7 @@ const NewTab: React.FC = () => {
                         }
                       }}
                       colorScheme="red">
-                      🛑 Stop Generating
+                      🛑 Stop
                     </Button>
                   )}
                 </Box>
