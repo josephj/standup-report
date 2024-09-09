@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 import {
   Box,
@@ -18,6 +18,7 @@ import {
   extendTheme,
   Link,
   Textarea,
+  Button,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, SettingsIcon } from '@chakra-ui/icons';
 import { t } from '@extension/i18n';
@@ -51,7 +52,7 @@ interface JiraIssue {
 
 const theme = extendTheme({
   config: {
-    initialColorMode: 'dark',
+    initialColorMode: 'light',
     useSystemColorMode: false,
   },
 });
@@ -63,6 +64,7 @@ const NewTab: React.FC = () => {
   const [connectedSystems, setConnectedSystems] = useState<string[]>([]);
   const [aiGeneratedReport, setAiGeneratedReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchWorkItems = useCallback(async () => {
     setIsLoading(true);
@@ -173,22 +175,26 @@ const NewTab: React.FC = () => {
         .map((item, index) => (
           <ListItem key={index} p={3} borderWidth={1} borderRadius="md">
             <Flex justifyContent="space-between" alignItems="center">
-              <Flex alignItems="center" flexGrow={1} mr={2}>
-                <Badge colorScheme={item.type === 'Jira' ? 'blue' : 'green'} mr={2}>
+              <Flex alignItems="center" flexGrow={1} mr={2} minWidth={0}>
+                {' '}
+                {/* 添加 minWidth={0} */}
+                <Badge colorScheme={item.type === 'Jira' ? 'blue' : 'green'} mr={2} flexShrink={0}>
                   {item.type}
                 </Badge>
-                <Text fontWeight="medium" isTruncated>
+                <Text fontWeight="medium" isTruncated maxWidth="calc(100% - 100px)">
+                  {' '}
+                  {/* 修改这里 */}
                   <Link href={item.url} isExternal color="blue.500">
                     {item.title} <ExternalLinkIcon mx="2px" />
                   </Link>
                   {item.type === 'GitHub' && item.isDraft && (
-                    <Badge ml={2} colorScheme="orange">
+                    <Badge ml={2} colorScheme="orange" flexShrink={0}>
                       Draft
                     </Badge>
                   )}
                 </Text>
                 {item.type === 'Jira' && (
-                  <Badge ml={2} colorScheme="purple">
+                  <Badge ml={2} colorScheme="purple" flexShrink={0}>
                     {item.status}
                   </Badge>
                 )}
@@ -210,27 +216,60 @@ const NewTab: React.FC = () => {
       return;
     }
 
+    abortControllerRef.current = new AbortController();
+
     try {
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${openaiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           model: 'gpt-4',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${openaiToken}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+          stream: true,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
 
-      const generatedText = response.data.choices[0].message.content;
-      setAiGeneratedReport(generatedText);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder('utf-8');
+
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        const parsedLines = lines
+          .map(line => line.replace(/^data: /, '').trim())
+          .filter(line => line !== '' && line !== '[DONE]')
+          .map(line => JSON.parse(line));
+
+        for (const parsedLine of parsedLines) {
+          const { choices } = parsedLine;
+          const { delta } = choices[0];
+          const { content } = delta;
+          if (content) {
+            setAiGeneratedReport(prev => prev + content);
+          }
+        }
+      }
     } catch (error) {
-      console.error('Error calling OpenAI:', error);
-      setAiGeneratedReport('Error: Failed to generate report. Please check your API key and try again.');
+      if (error.name === 'AbortError') {
+        console.log('Fetch aborted');
+      } else {
+        console.error('Error calling OpenAI:', error);
+        setAiGeneratedReport('Error: Failed to generate report. Please check your API key and try again.');
+      }
+    } finally {
+      abortControllerRef.current = null;
     }
   };
 
@@ -262,7 +301,7 @@ const NewTab: React.FC = () => {
   return (
     <ChakraProvider theme={theme}>
       <Box minHeight="100vh" p={8} display="flex" justifyContent="center">
-        <Box maxWidth="1200px" width="100%">
+        <Box maxWidth="1400px" width="100%">
           <VStack spacing={8} align="stretch">
             <Flex justifyContent="space-between" alignItems="center">
               <Heading>Stand-up Report</Heading>
@@ -281,30 +320,47 @@ const NewTab: React.FC = () => {
                 <Spinner size="xl" />
               </Center>
             ) : (
-              <>
-                <Box>
-                  <Heading size="md" mb={4}>
-                    Recent Updates
-                  </Heading>
-                  {renderWorkItems(workItems, false)}
+              <Flex direction={{ base: 'column', lg: 'row' }} gap={8}>
+                <Box flex="1">
+                  <VStack spacing={8} align="stretch">
+                    <Box>
+                      <Heading size="md" mb={4}>
+                        Recent Updates
+                      </Heading>
+                      {renderWorkItems(workItems, false)}
+                    </Box>
+                    <Box>
+                      <Heading size="md" mb={4}>
+                        Stale Items
+                      </Heading>
+                      {renderWorkItems(workItems, true)}
+                    </Box>
+                  </VStack>
                 </Box>
-                <Box>
-                  <Heading size="md" mb={4}>
-                    Stale Items
-                  </Heading>
-                  {renderWorkItems(workItems, true)}
-                </Box>
-                <Box>
+                <Box flex="1">
                   <Heading size="md" mb={2}>
                     Summary
                   </Heading>
-                  {isGeneratingReport ? (
-                    <Spinner size="xl" />
-                  ) : (
-                    <Textarea value={aiGeneratedReport} height={400} isReadOnly />
+                  <Textarea
+                    value={aiGeneratedReport}
+                    height="calc(100% - 40px)"
+                    isReadOnly
+                    placeholder="The summary will appear here once generated."
+                  />
+                  {isGeneratingReport && (
+                    <Button
+                      mt={2}
+                      onClick={() => {
+                        if (abortControllerRef.current) {
+                          abortControllerRef.current.abort();
+                          setIsGeneratingReport(false);
+                        }
+                      }}>
+                      Stop Generating
+                    </Button>
                   )}
                 </Box>
-              </>
+              </Flex>
             )}
           </VStack>
 
