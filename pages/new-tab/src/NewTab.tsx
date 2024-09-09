@@ -19,7 +19,7 @@ import {
   Link,
   Button,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, SettingsIcon, TimeIcon, StarIcon } from '@chakra-ui/icons';
+import { ExternalLinkIcon, SettingsIcon, TimeIcon, StarIcon, RepeatIcon } from '@chakra-ui/icons';
 import { t } from '@extension/i18n';
 import { ConnectSystemsModal } from './ConnectSystemsModal';
 import axios from 'axios';
@@ -73,6 +73,7 @@ const NewTab: React.FC = () => {
   const [connectedSystems, setConnectedSystems] = useState<string[]>([]);
   const [aiGeneratedReport, setAiGeneratedReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isReportGenerated, setIsReportGenerated] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchWorkItems = useCallback(async () => {
@@ -282,6 +283,7 @@ const NewTab: React.FC = () => {
   const generateStandupReport = useCallback(async () => {
     setIsGeneratingReport(true);
     setAiGeneratedReport('');
+    setIsReportGenerated(false);
 
     const workItemsText = workItems
       .map(item => `${item.type}: ${item.title} (${item.status || 'No status'}) - Updated: ${item.updatedAt}`)
@@ -291,6 +293,7 @@ const NewTab: React.FC = () => {
 
     try {
       await callOpenAI(fullPrompt);
+      setIsReportGenerated(true);
     } catch (error) {
       console.error('Error generating report:', error);
     } finally {
@@ -353,9 +356,37 @@ const NewTab: React.FC = () => {
                     boxShadow="md"
                     position="relative">
                     {aiGeneratedReport ? (
-                      <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
-                      </HtmlContent>
+                      <>
+                        <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
+                        </HtmlContent>
+                        <Flex position="absolute" bottom={4} right={4} gap={2}>
+                          {isGeneratingReport && (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (abortControllerRef.current) {
+                                  abortControllerRef.current.abort();
+                                  setIsGeneratingReport(false);
+                                }
+                              }}
+                              colorScheme="red">
+                              🛑 Stop
+                            </Button>
+                          )}
+                          {isReportGenerated && (
+                            <Button
+                              onClick={generateStandupReport}
+                              isLoading={isGeneratingReport}
+                              loadingText="Regenerating..."
+                              colorScheme="purple"
+                              size="sm"
+                              leftIcon={<RepeatIcon />}>
+                              Regenerate Report
+                            </Button>
+                          )}
+                        </Flex>
+                      </>
                     ) : (
                       <Flex justifyContent="center" alignItems="flex-start" height="100%" py="32">
                         <Button
@@ -366,27 +397,11 @@ const NewTab: React.FC = () => {
                           variant="outline"
                           size="sm"
                           leftIcon={<StarIcon />}>
-                          {aiGeneratedReport ? 'Refresh Report' : 'Generate Report'}
+                          Generate Report
                         </Button>
                       </Flex>
                     )}
                   </Box>
-                  {isGeneratingReport && (
-                    <Button
-                      position="absolute"
-                      bottom={4}
-                      right={4}
-                      size="sm"
-                      onClick={() => {
-                        if (abortControllerRef.current) {
-                          abortControllerRef.current.abort();
-                          setIsGeneratingReport(false);
-                        }
-                      }}
-                      colorScheme="red">
-                      🛑 Stop
-                    </Button>
-                  )}
                 </Box>
               </Flex>
             )}
