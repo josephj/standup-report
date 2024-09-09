@@ -29,6 +29,7 @@ import promptTemplate from './prompt.md?raw';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { HtmlContent } from './html-content';
+import OpenAI from 'openai';
 
 interface WorkItem {
   type: 'Jira' | 'GitHub';
@@ -241,54 +242,27 @@ const NewTab: React.FC = () => {
       return;
     }
 
+    const openai = new OpenAI({
+      apiKey: openaiToken,
+      dangerouslyAllowBrowser: true,
+    });
+
     abortControllerRef.current = new AbortController();
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${openaiToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const stream = await openai.chat.completions.create(
+        {
           model: 'gpt-4',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0,
           stream: true,
-        }),
-        signal: abortControllerRef.current.signal,
-      });
+        },
+        { signal: abortControllerRef.current.signal },
+      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('Failed to get reader from response');
-      }
-
-      const decoder = new TextDecoder('utf-8');
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        const parsedLines = lines
-          .map(line => line.replace(/^data: /, '').trim())
-          .filter(line => line !== '' && line !== '[DONE]')
-          .map(line => JSON.parse(line));
-
-        for (const parsedLine of parsedLines) {
-          const { choices } = parsedLine;
-          const { delta } = choices[0];
-          const { content } = delta;
-          if (content) {
-            setAiGeneratedReport(prev => prev + content);
-          }
-        }
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        setAiGeneratedReport(prev => prev + content);
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -349,7 +323,7 @@ const NewTab: React.FC = () => {
           </Flex>
         ) : aiGeneratedReport ? (
           <>
-            <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
+            <HtmlContent sx={{ p: { _last: { mb: 0 } }, pb: '60px' }}>
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
             </HtmlContent>
             <Flex position="absolute" bottom={4} right={4} gap={2}>
