@@ -75,6 +75,24 @@ const NewTab: React.FC = () => {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isReportGenerated, setIsReportGenerated] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [hasOpenAIToken, setHasOpenAIToken] = useState(false);
+  const [hasValidTokens, setHasValidTokens] = useState(false);
+
+  useEffect(() => {
+    const checkTokens = async () => {
+      const { jiraToken, githubToken } = await chrome.storage.local.get(['jiraToken', 'githubToken']);
+      setHasValidTokens(Boolean(jiraToken && githubToken));
+    };
+    checkTokens();
+  }, []);
+
+  useEffect(() => {
+    const checkOpenAIToken = async () => {
+      const { openaiToken } = await chrome.storage.local.get('openaiToken');
+      setHasOpenAIToken(Boolean(openaiToken));
+    };
+    checkOpenAIToken();
+  }, []);
 
   const fetchWorkItems = useCallback(async () => {
     setIsLoading(true);
@@ -246,10 +264,14 @@ const NewTab: React.FC = () => {
       }
 
       const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get reader from response');
+      }
+
       const decoder = new TextDecoder('utf-8');
 
       while (true) {
-        const { done, value } = await reader!.read();
+        const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value);
@@ -269,7 +291,7 @@ const NewTab: React.FC = () => {
         }
       }
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.log('Fetch aborted');
       } else {
         console.error('Error calling OpenAI:', error);
@@ -301,117 +323,157 @@ const NewTab: React.FC = () => {
     }
   }, [workItems]);
 
+  const renderSummarySection = () => (
+    <Box flex="1">
+      <Heading size="md" mb={4}>
+        📊 Summary
+      </Heading>
+      <Box
+        height="calc(100% - 40px)"
+        overflowY="auto"
+        border="1px solid"
+        borderColor="purple.200"
+        borderRadius="md"
+        p={4}
+        bg="white"
+        boxShadow="md"
+        position="relative">
+        {!hasOpenAIToken ? (
+          <Flex direction="column" justifyContent="center" alignItems="center" height="100%">
+            <Text mb={4} textAlign="center">
+              To generate a summary, please provide an OpenAI API key in the settings.
+            </Text>
+            <Button onClick={onOpen} colorScheme="purple" leftIcon={<SettingsIcon />}>
+              Open Settings
+            </Button>
+          </Flex>
+        ) : aiGeneratedReport ? (
+          <>
+            <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
+            </HtmlContent>
+            <Flex position="absolute" bottom={4} right={4} gap={2}>
+              {isGeneratingReport && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (abortControllerRef.current) {
+                      abortControllerRef.current.abort();
+                      setIsGeneratingReport(false);
+                    }
+                  }}
+                  colorScheme="red">
+                  🛑 Stop
+                </Button>
+              )}
+              {isReportGenerated && (
+                <Button
+                  onClick={generateStandupReport}
+                  isLoading={isGeneratingReport}
+                  loadingText="Regenerating..."
+                  colorScheme="purple"
+                  size="sm"
+                  leftIcon={<RepeatIcon />}>
+                  Regenerate Report
+                </Button>
+              )}
+            </Flex>
+          </>
+        ) : (
+          <Flex justifyContent="center" alignItems="flex-start" height="100%" py="32">
+            <Button
+              onClick={generateStandupReport}
+              isLoading={isGeneratingReport}
+              loadingText="Generating..."
+              colorScheme="purple"
+              variant="outline"
+              size="sm"
+              leftIcon={<StarIcon />}>
+              Generate Report
+            </Button>
+          </Flex>
+        )}
+      </Box>
+    </Box>
+  );
+
+  const handleSettingsSaved = useCallback(() => {
+    fetchWorkItems();
+    const checkOpenAIToken = async () => {
+      const { openaiToken } = await chrome.storage.local.get('openaiToken');
+      setHasOpenAIToken(Boolean(openaiToken));
+    };
+    checkOpenAIToken();
+  }, [fetchWorkItems]);
+
   return (
     <ChakraProvider theme={theme}>
       <Box minHeight="100vh" p={8} display="flex" justifyContent="center">
         <Box maxWidth="1400px" width="100%">
-          <VStack spacing={8} align="stretch">
-            <Flex justifyContent="space-between" alignItems="center">
-              <Heading>📋 Stand-up Report</Heading>
-              <Tooltip label="Manage Connections" aria-label="Manage Connections">
-                <IconButton
-                  aria-label="Manage Connections"
-                  icon={<SettingsIcon />}
-                  onClick={onOpen}
-                  variant="outline"
-                  colorScheme="purple"
-                />
-              </Tooltip>
-            </Flex>
-
-            {isLoading ? (
-              <Center>
-                <Spinner size="xl" color="purple.500" />
-              </Center>
-            ) : (
-              <Flex direction={{ base: 'column', lg: 'row' }} gap={8}>
-                <Box flex="1">
-                  <VStack spacing={8} align="stretch">
-                    <Box>
-                      <Heading size="md" mb={4}>
-                        🔥 Recent Updates
-                      </Heading>
-                      {renderWorkItems(workItems, false)}
-                    </Box>
-                    <Box>
-                      <Heading size="md" mb={4}>
-                        ⏳ Stale Items
-                      </Heading>
-                      {renderWorkItems(workItems, true)}
-                    </Box>
-                  </VStack>
-                </Box>
-                <Box flex="1">
-                  <Heading size="md" mb={4}>
-                    📊 Summary
-                  </Heading>
-                  <Box
-                    height="calc(100% - 40px)"
-                    overflowY="auto"
-                    border="1px solid"
-                    borderColor="purple.200"
-                    borderRadius="md"
-                    p={4}
-                    bg="white"
-                    boxShadow="md"
-                    position="relative">
-                    {aiGeneratedReport ? (
-                      <>
-                        <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiGeneratedReport}</ReactMarkdown>
-                        </HtmlContent>
-                        <Flex position="absolute" bottom={4} right={4} gap={2}>
-                          {isGeneratingReport && (
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                if (abortControllerRef.current) {
-                                  abortControllerRef.current.abort();
-                                  setIsGeneratingReport(false);
-                                }
-                              }}
-                              colorScheme="red">
-                              🛑 Stop
-                            </Button>
-                          )}
-                          {isReportGenerated && (
-                            <Button
-                              onClick={generateStandupReport}
-                              isLoading={isGeneratingReport}
-                              loadingText="Regenerating..."
-                              colorScheme="purple"
-                              size="sm"
-                              leftIcon={<RepeatIcon />}>
-                              Regenerate Report
-                            </Button>
-                          )}
-                        </Flex>
-                      </>
-                    ) : (
-                      <Flex justifyContent="center" alignItems="flex-start" height="100%" py="32">
-                        <Button
-                          onClick={generateStandupReport}
-                          isLoading={isGeneratingReport}
-                          loadingText="Generating..."
-                          colorScheme="purple"
-                          variant="outline"
-                          size="sm"
-                          leftIcon={<StarIcon />}>
-                          Generate Report
-                        </Button>
-                      </Flex>
-                    )}
-                  </Box>
-                </Box>
+          {hasValidTokens ? (
+            <VStack spacing={8} align="stretch">
+              <Flex justifyContent="space-between" alignItems="center">
+                <Heading>📋 Stand-up Report</Heading>
+                <Tooltip label="Manage Connections" aria-label="Manage Connections">
+                  <IconButton
+                    aria-label="Manage Connections"
+                    icon={<SettingsIcon />}
+                    onClick={onOpen}
+                    variant="outline"
+                    colorScheme="purple"
+                  />
+                </Tooltip>
               </Flex>
-            )}
-          </VStack>
+
+              {isLoading ? (
+                <Center>
+                  <Spinner size="xl" color="purple.500" />
+                </Center>
+              ) : (
+                <Flex direction={{ base: 'column', lg: 'row' }} gap={8}>
+                  <Box flex="1">
+                    <VStack spacing={8} align="stretch">
+                      <Box>
+                        <Heading size="md" mb={4}>
+                          🔥 Recent Updates
+                        </Heading>
+                        {renderWorkItems(workItems, false)}
+                      </Box>
+                      <Box>
+                        <Heading size="md" mb={4}>
+                          ⏳ Stale Items
+                        </Heading>
+                        {renderWorkItems(workItems, true)}
+                      </Box>
+                    </VStack>
+                  </Box>
+                  {renderSummarySection()}
+                </Flex>
+              )}
+            </VStack>
+          ) : (
+            <VStack spacing={8} align="center" justify="center" height="100vh">
+              <Heading>Welcome to Stand-up Report</Heading>
+              <Text fontSize="xl" textAlign="center">
+                It seems you haven't connected Jira and GitHub yet.
+                <br />
+                Please provide tokens for these systems to get started.
+              </Text>
+              <Button onClick={onOpen} colorScheme="purple" size="lg" leftIcon={<SettingsIcon />}>
+                Connect Systems
+              </Button>
+            </VStack>
+          )}
 
           <ConnectSystemsModal
             isOpen={isOpen}
             onClose={onClose}
             onConnect={setConnectedSystems}
             connectedSystems={connectedSystems}
+            onSettingsSaved={() => {
+              handleSettingsSaved();
+              setHasValidTokens(true);
+            }}
           />
         </Box>
       </Box>

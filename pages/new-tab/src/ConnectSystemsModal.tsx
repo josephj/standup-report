@@ -27,6 +27,7 @@ interface ConnectSystemsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConnect: (systems: string[]) => void;
+  onSettingsSaved: () => void; // 添加这个新的prop
   connectedSystems: string[];
 }
 
@@ -102,6 +103,7 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
   isOpen,
   onClose,
   onConnect,
+  onSettingsSaved, // 添加这个新的prop
   connectedSystems,
 }) => {
   const [tokens, setTokens] = useState<Record<string, string>>({});
@@ -179,18 +181,31 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
     systems.forEach(system => {
       const token = tokens[system.name];
       const url = urls[system.name];
-      if (token && (!system.requiresUrl || url)) {
-        console.log('system :', system);
+
+      // 始终保存令牌，即使它是空字符串
+      chrome.storage.local.set({
+        [`${system.name.toLowerCase()}Token`]: token || '',
+      });
+
+      // 如果系统需要 URL，也保存 URL，即使它是空字符串
+      if (system.requiresUrl) {
         chrome.storage.local.set({
-          [`${system.name.toLowerCase()}Token`]: token,
-          ...(system.requiresUrl && { [`${system.name.toLowerCase()}Url`]: url }),
+          [`${system.name.toLowerCase()}Url`]: url || '',
         });
-        setInitialTokens(prev => ({ ...prev, [system.name]: token }));
-        setInitialUrls(prev => ({ ...prev, [system.name]: url }));
+      }
+
+      // 更新初始值
+      setInitialTokens(prev => ({ ...prev, [system.name]: token || '' }));
+      setInitialUrls(prev => ({ ...prev, [system.name]: url || '' }));
+
+      // 只有当令牌不为空（和 URL，如果需要的话）时，才将系统添加到已连接系统列表
+      if (token && (!system.requiresUrl || url)) {
         newConnectedSystems.push(system.name);
       }
     });
+
     onConnect(newConnectedSystems);
+    onSettingsSaved(); // 调用这个新的函数
     toast({
       title: 'Settings saved successfully',
       status: 'success',
