@@ -12,6 +12,9 @@
       "../../vite-env.d.ts"
     ]
   },
+  "paths": {
+    "@chakra-ui/icons": ["./node_modules/@chakra-ui/icons"]
+  },
   "include": [
     "src"
   ]

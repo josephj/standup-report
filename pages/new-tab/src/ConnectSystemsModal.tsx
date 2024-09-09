@@ -254,7 +254,7 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
               </FormControl>
             ))}
             <Button onClick={handleSave} colorScheme="blue">
-              Save
+              Save Connections
             </Button>
           </VStack>
         </ModalBody>

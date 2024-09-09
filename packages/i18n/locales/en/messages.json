@@ -1,11 +1,11 @@
 {
   "extensionDescription": {
     "description": "Extension description",
-    "message": "Chrome extension boilerplate developed with Vite, React and Typescript"
+    "message": "Automatically generate stand-up reports from Jira and GitHub activities"
   },
   "extensionName": {
     "description": "Extension name",
-    "message": "Chrome extension boilerplate"
+    "message": "Stand-up Report Generator"
   },
   "toggleTheme": {
     "message": "Toggle theme"
