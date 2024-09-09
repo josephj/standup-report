@@ -67,6 +67,8 @@ const theme = extendTheme({
   },
 });
 
+const CACHE_DURATION = 60 * 60 * 1000; // 1小时，单位为毫秒
+
 const NewTab: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
@@ -95,18 +97,34 @@ const NewTab: React.FC = () => {
     checkOpenAIToken();
   }, []);
 
+  const fetchWithCache = useCallback(async (url: string, fetchFunction: () => Promise<WorkItem[]>) => {
+    const cacheKey = `cache_${url}`;
+    const cachedData = await chrome.storage.local.get(cacheKey);
+
+    if (cachedData[cacheKey] && Date.now() - cachedData[cacheKey].timestamp < CACHE_DURATION) {
+      return cachedData[cacheKey].data;
+    } else {
+      const freshData = await fetchFunction();
+      await chrome.storage.local.set({
+        [cacheKey]: { data: freshData, timestamp: Date.now() },
+      });
+      return freshData;
+    }
+  }, []);
+
   const fetchWorkItems = useCallback(async () => {
     setIsLoading(true);
+    setWorkItems([]);
     try {
-      const jiraItems = await fetchJiraItems();
-      const githubItems = await fetchGitHubItems();
+      const jiraItems = await fetchWithCache('jira', fetchJiraItems);
+      const githubItems = await fetchWithCache('github', fetchGitHubItems);
       setWorkItems([...jiraItems, ...githubItems]);
     } catch (error) {
       console.error('Error fetching work items:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchWithCache]);
 
   useEffect(() => {
     fetchWorkItems();
