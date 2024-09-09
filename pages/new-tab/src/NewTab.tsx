@@ -204,7 +204,6 @@ const NewTab: React.FC = () => {
 
   const callOpenAI = async (prompt: string) => {
     const { openaiToken } = await chrome.storage.local.get('openaiToken');
-    console.log('openaiApiKey :', openaiToken);
     if (!openaiToken) {
       console.error('OpenAI API key not found');
       setAiGeneratedReport('Error: OpenAI API key not found. Please set up your API key in the extension settings.');
@@ -262,53 +261,60 @@ const NewTab: React.FC = () => {
 
   return (
     <ChakraProvider theme={theme}>
-      <Box minHeight="100vh" p={8}>
-        <VStack spacing={8} align="stretch">
-          <Flex justifyContent="space-between" alignItems="center">
-            <Heading>Stand-up Report</Heading>
-            <Tooltip label="Manage Connections" aria-label="Manage Connections">
-              <IconButton aria-label="Manage Connections" icon={<SettingsIcon />} onClick={onOpen} variant="outline" />
-            </Tooltip>
-          </Flex>
+      <Box minHeight="100vh" p={8} display="flex" justifyContent="center">
+        <Box maxWidth="1200px" width="100%">
+          <VStack spacing={8} align="stretch">
+            <Flex justifyContent="space-between" alignItems="center">
+              <Heading>Stand-up Report</Heading>
+              <Tooltip label="Manage Connections" aria-label="Manage Connections">
+                <IconButton
+                  aria-label="Manage Connections"
+                  icon={<SettingsIcon />}
+                  onClick={onOpen}
+                  variant="outline"
+                />
+              </Tooltip>
+            </Flex>
 
-          {isLoading ? (
-            <Center>
-              <Spinner size="xl" />
-            </Center>
-          ) : (
-            <>
-              <Box>
-                <Heading size="md" mb={4}>
-                  Recent Updates
-                </Heading>
-                {renderWorkItems(workItems, false)}
-              </Box>
-              <Box>
-                <Heading size="md" mb={4}>
-                  Stale Items
-                </Heading>
-                {renderWorkItems(workItems, true)}
-              </Box>
-              <Box>
-                <Heading size="md" mb={2}>
-                  Summary
-                </Heading>
-                {isGeneratingReport ? (
-                  <Spinner size="xl" />
-                ) : (
-                  <Textarea value={aiGeneratedReport} height={400} isReadOnly />
-                )}
-              </Box>
-            </>
-          )}
-        </VStack>
+            {isLoading ? (
+              <Center>
+                <Spinner size="xl" />
+              </Center>
+            ) : (
+              <>
+                <Box>
+                  <Heading size="md" mb={4}>
+                    Recent Updates
+                  </Heading>
+                  {renderWorkItems(workItems, false)}
+                </Box>
+                <Box>
+                  <Heading size="md" mb={4}>
+                    Stale Items
+                  </Heading>
+                  {renderWorkItems(workItems, true)}
+                </Box>
+                <Box>
+                  <Heading size="md" mb={2}>
+                    Summary
+                  </Heading>
+                  {isGeneratingReport ? (
+                    <Spinner size="xl" />
+                  ) : (
+                    <Textarea value={aiGeneratedReport} height={400} isReadOnly />
+                  )}
+                </Box>
+              </>
+            )}
+          </VStack>
 
-        <ConnectSystemsModal
-          isOpen={isOpen}
-          onClose={onClose}
-          onConnect={setConnectedSystems}
-          connectedSystems={connectedSystems}
-        />
+          <ConnectSystemsModal
+            isOpen={isOpen}
+            onClose={onClose}
+            onConnect={setConnectedSystems}
+            connectedSystems={connectedSystems}
+          />
+        </Box>
       </Box>
     </ChakraProvider>
   );
