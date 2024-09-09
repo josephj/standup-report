@@ -29,6 +29,7 @@
     "@extension/ui": "workspace:*",
     "@octokit/rest": "^21.0.2",
     "axios": "^1.7.7",
+    "date-fns": "^2.30.0",
     "framer-motion": "^11.5.4",
     "lodash": "^4.17.21"
   },

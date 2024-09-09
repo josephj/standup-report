@@ -35,6 +35,7 @@ interface SystemConfig {
   connectFunction: (token: string, url?: string) => Promise<boolean>;
   tokenGuideUrl: string;
   requiresUrl?: boolean;
+  additionalSettings?: React.ReactNode;
 }
 
 const systems: SystemConfig[] = [
@@ -209,7 +210,7 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Connect Systems</ModalHeader>
+        <ModalHeader>Settings</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={6}>
@@ -254,7 +255,7 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
               </FormControl>
             ))}
             <Button onClick={handleSave} colorScheme="blue">
-              Save Connections
+              Save
             </Button>
           </VStack>
         </ModalBody>
