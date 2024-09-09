@@ -34,10 +34,10 @@
     "react-dom": "18.3.1",
     "@octokit/rest": "^18.12.0",
     "@chakra-ui/icons": "^2.0.0",
-    "date-fns": "^2.30.0"
+    "date-fns": "^2.30.0",
+    "@types/chrome": "^0.0.xxx"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.270",
     "@types/node": "^20.16.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

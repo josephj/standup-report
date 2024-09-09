@@ -22,6 +22,7 @@ import {
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
+import { GoogleCalendarAuth } from './GoogleCalendarAuth';
 
 interface ConnectSystemsModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ interface SystemConfig {
   tokenGuideUrl: string;
   requiresUrl?: boolean;
   additionalSettings?: React.ReactNode;
+  useOAuth?: boolean;
 }
 
 const systems: SystemConfig[] = [
@@ -76,6 +78,24 @@ const systems: SystemConfig[] = [
     },
     tokenGuideUrl: 'https://id.atlassian.com/manage-profile/security/api-tokens',
     requiresUrl: true,
+  },
+  {
+    name: 'Google Calendar',
+    connectFunction: async (token: string) => {
+      try {
+        const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        return response.ok;
+      } catch (error) {
+        console.error('Error validating Google Calendar token:', error);
+        return false;
+      }
+    },
+    tokenGuideUrl: '',
+    useOAuth: true,
   },
 ];
 
@@ -206,6 +226,16 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
     onClose();
   };
 
+  const handleGoogleCalendarAuth = (token: string) => {
+    if (token) {
+      setTokens(prev => ({ ...prev, 'Google Calendar': token }));
+      const googleCalendarSystem = systems.find(s => s.name === 'Google Calendar');
+      if (googleCalendarSystem) {
+        validateToken(googleCalendarSystem, token);
+      }
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
@@ -228,30 +258,36 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
                       />
                     </InputGroup>
                   )}
-                  <InputGroup>
-                    <Input
-                      type="password"
-                      value={tokens[system.name] || ''}
-                      onChange={e => handleTokenChange(system, e.target.value)}
-                      placeholder={`Enter ${system.name} API Token`}
-                      isDisabled={system.requiresUrl && !urls[system.name]}
-                    />
-                    <InputRightElement>
-                      {isValidating[system.name] && <Spinner size="sm" />}
-                      {!isValidating[system.name] && tokenValidation[system.name] === true && (
-                        <CheckIcon color="green.500" />
-                      )}
-                      {!isValidating[system.name] && tokenValidation[system.name] === false && (
-                        <CloseIcon color="red.500" />
-                      )}
-                    </InputRightElement>
-                  </InputGroup>
+                  {system.useOAuth ? (
+                    <GoogleCalendarAuth onAuthComplete={handleGoogleCalendarAuth} />
+                  ) : (
+                    <InputGroup>
+                      <Input
+                        type="password"
+                        value={tokens[system.name] || ''}
+                        onChange={e => handleTokenChange(system, e.target.value)}
+                        placeholder={`Enter ${system.name} API Token`}
+                        isDisabled={system.requiresUrl && !urls[system.name]}
+                      />
+                      <InputRightElement>
+                        {isValidating[system.name] && <Spinner size="sm" />}
+                        {!isValidating[system.name] && tokenValidation[system.name] === true && (
+                          <CheckIcon color="green.500" />
+                        )}
+                        {!isValidating[system.name] && tokenValidation[system.name] === false && (
+                          <CloseIcon color="red.500" />
+                        )}
+                      </InputRightElement>
+                    </InputGroup>
+                  )}
                 </Stack>
-                <Text fontSize="sm" mt={1}>
-                  <Link href={system.tokenGuideUrl} isExternal color="blue.500">
-                    Get {system.name} token <ExternalLinkIcon mx="2px" />
-                  </Link>
-                </Text>
+                {!system.useOAuth && (
+                  <Text fontSize="sm" mt={1}>
+                    <Link href={system.tokenGuideUrl} isExternal color="blue.500">
+                      Get {system.name} token <ExternalLinkIcon mx="2px" />
+                    </Link>
+                  </Text>
+                )}
               </FormControl>
             ))}
             <Button onClick={handleSave} colorScheme="blue">

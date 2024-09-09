@@ -419,6 +419,9 @@ importers:
       '@extension/vite-config':
         specifier: workspace:*
         version: link:../../packages/vite-config
+      '@types/chrome':
+        specifier: ^0.0.270
+        version: 0.0.270
       '@types/lodash':
         specifier: ^4.17.7
         version: 4.17.7

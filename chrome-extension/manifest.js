@@ -37,6 +37,7 @@ const manifest = deepmerge(
       'tabs',
       'notifications',
       'activeTab', // 添加 activeTab 权限
+      'identity', // 添加这一行
     ],
     options_page: 'options/index.html',
     background: {
@@ -74,6 +75,10 @@ const manifest = deepmerge(
         matches: ['*://*/*'],
       },
     ],
+    oauth2: {
+      client_id: 'YOUR_CLIENT_ID.apps.googleusercontent.com',
+      scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+    },
   },
   !isFirefox && sidePanelConfig,
 );
