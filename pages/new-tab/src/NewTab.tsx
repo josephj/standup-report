@@ -19,7 +19,7 @@ import {
   Link,
   Button,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, SettingsIcon, TimeIcon, StarIcon, RepeatIcon } from '@chakra-ui/icons';
+import { ExternalLinkIcon, SettingsIcon, TimeIcon, StarIcon, RepeatIcon, RepeatClockIcon } from '@chakra-ui/icons';
 import { t } from '@extension/i18n';
 import { ConnectSystemsModal } from './ConnectSystemsModal';
 import axios from 'axios';
@@ -398,6 +398,16 @@ const NewTab: React.FC = () => {
     checkOpenAIToken();
   }, [fetchWorkItems]);
 
+  const handleForceRefresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await chrome.storage.local.remove(['cache_jira', 'cache_github']);
+      await fetchWorkItems();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchWorkItems]);
+
   return (
     <ChakraProvider theme={theme}>
       <Box minHeight="100vh" p={8} display="flex" justifyContent="center">
@@ -406,15 +416,28 @@ const NewTab: React.FC = () => {
             <VStack spacing={8} align="stretch">
               <Flex justifyContent="space-between" alignItems="center">
                 <Heading>📋 Stand-up Report</Heading>
-                <Tooltip label="Manage Connections" aria-label="Manage Connections">
-                  <IconButton
-                    aria-label="Manage Connections"
-                    icon={<SettingsIcon />}
-                    onClick={onOpen}
-                    variant="outline"
-                    colorScheme="purple"
-                  />
-                </Tooltip>
+                <Flex>
+                  <Tooltip label="Force Refresh" aria-label="Force Refresh">
+                    <IconButton
+                      aria-label="Force Refresh"
+                      icon={<RepeatClockIcon />}
+                      onClick={handleForceRefresh}
+                      variant="outline"
+                      colorScheme="blue"
+                      mr={2}
+                      isLoading={isLoading}
+                    />
+                  </Tooltip>
+                  <Tooltip label="Manage Connections" aria-label="Manage Connections">
+                    <IconButton
+                      aria-label="Manage Connections"
+                      icon={<SettingsIcon />}
+                      onClick={onOpen}
+                      variant="outline"
+                      colorScheme="purple"
+                    />
+                  </Tooltip>
+                </Flex>
               </Flex>
 
               {isLoading ? (
