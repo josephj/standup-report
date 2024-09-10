@@ -29,6 +29,7 @@
     "@extension/ui": "workspace:*",
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
     "@fortawesome/free-brands-svg-icons": "^6.6.0",
+    "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@octokit/rest": "^21.0.2",
     "@uiw/react-md-editor": "^4.0.4",

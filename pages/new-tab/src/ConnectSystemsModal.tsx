@@ -22,6 +22,10 @@ import {
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGithub, faJira } from '@fortawesome/free-brands-svg-icons';
+import { faRobot, faCog } from '@fortawesome/free-solid-svg-icons';
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
 interface ConnectSystemsModalProps {
   isOpen: boolean;
@@ -37,6 +41,7 @@ interface SystemConfig {
   tokenGuideUrl: string;
   requiresUrl?: boolean;
   placeholder?: string;
+  icon: IconDefinition;
 }
 
 const systems: SystemConfig[] = [
@@ -56,6 +61,7 @@ const systems: SystemConfig[] = [
       }
     },
     tokenGuideUrl: 'https://github.com/settings/tokens/new?scopes=repo,user&description=StandupReportExtension',
+    icon: faGithub,
   },
   {
     name: 'Jira',
@@ -77,6 +83,7 @@ const systems: SystemConfig[] = [
     },
     tokenGuideUrl: 'https://id.atlassian.com/manage-profile/security/api-tokens',
     requiresUrl: true,
+    icon: faJira,
   },
   {
     name: 'OpenAI',
@@ -96,6 +103,7 @@ const systems: SystemConfig[] = [
     tokenGuideUrl: 'https://platform.openai.com/account/api-keys',
     placeholder: 'sk-...',
     requiresUrl: false,
+    icon: faRobot,
   },
 ];
 
@@ -219,13 +227,17 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
     <Modal isOpen={isOpen} onClose={handleClose}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Settings</ModalHeader>
+        <ModalHeader>
+          <FontAwesomeIcon icon={faCog} fixedWidth /> Settings
+        </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={6}>
             {systems.map(system => (
               <FormControl key={system.name}>
-                <FormLabel>{system.name}</FormLabel>
+                <FormLabel>
+                  <FontAwesomeIcon icon={system.icon} fixedWidth /> {system.name}
+                </FormLabel>
                 <Stack spacing={2}>
                   {system.requiresUrl && (
                     <InputGroup>

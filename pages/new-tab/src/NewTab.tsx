@@ -19,7 +19,7 @@ import {
   Link,
   Button,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, SettingsIcon, TimeIcon, StarIcon, RepeatIcon, RepeatClockIcon } from '@chakra-ui/icons';
+import { TimeIcon } from '@chakra-ui/icons';
 import { t } from '@extension/i18n';
 import { ConnectSystemsModal } from './ConnectSystemsModal';
 import axios from 'axios';
@@ -32,6 +32,7 @@ import { HtmlContent } from './html-content';
 import OpenAI from 'openai';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faJira, faGithub } from '@fortawesome/free-brands-svg-icons';
+import { faSyncAlt, faCog, faStar } from '@fortawesome/free-solid-svg-icons';
 
 interface WorkItem {
   type: 'Jira' | 'GitHub';
@@ -69,7 +70,7 @@ const theme = extendTheme({
   },
 });
 
-const CACHE_DURATION = 60 * 60 * 1000; // 1小时，单位为毫秒
+const CACHE_DURATION = 60 * 60 * 1000; // 1小时单位秒
 
 const NewTab: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -387,7 +388,7 @@ const NewTab: React.FC = () => {
 
   const renderSummarySection = () => (
     <Box flex="1">
-      <Heading size="md" mb={4}>
+      <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 0 rgba(255,255,255)">
         📊 Summary
       </Heading>
       <Box
@@ -405,7 +406,7 @@ const NewTab: React.FC = () => {
             <Text mb={4} textAlign="center">
               To generate a summary, please provide an OpenAI API key in the settings.
             </Text>
-            <Button onClick={onOpen} colorScheme="purple" leftIcon={<SettingsIcon />}>
+            <Button onClick={onOpen} colorScheme="purple" leftIcon={<FontAwesomeIcon icon={faCog} color="#6B46C1" />}>
               Open Settings
             </Button>
           </Flex>
@@ -435,7 +436,7 @@ const NewTab: React.FC = () => {
                   loadingText="Regenerating..."
                   colorScheme="purple"
                   size="sm"
-                  leftIcon={<RepeatIcon />}>
+                  leftIcon={<FontAwesomeIcon icon={faSyncAlt} color="#6B46C1" />}>
                   Regenerate Report
                 </Button>
               )}
@@ -450,7 +451,7 @@ const NewTab: React.FC = () => {
               colorScheme="purple"
               variant="outline"
               size="sm"
-              leftIcon={<StarIcon />}>
+              leftIcon={<FontAwesomeIcon icon={faStar} color="#6B46C1" />}>
               Generate Report
             </Button>
           </Flex>
@@ -485,12 +486,14 @@ const NewTab: React.FC = () => {
           {hasValidTokens ? (
             <VStack spacing={8} align="stretch">
               <Flex justifyContent="space-between" alignItems="center">
-                <Heading>📋 Stand-up Report</Heading>
+                <Heading color="gray.700" textShadow="1px 1px 1px rgb(255,255,255)">
+                  📋 Stand-up Report
+                </Heading>
                 <Flex>
                   <Tooltip label="Force Refresh" aria-label="Force Refresh">
                     <IconButton
                       aria-label="Force Refresh"
-                      icon={<RepeatClockIcon />}
+                      icon={<FontAwesomeIcon icon={faSyncAlt} color="#2B6CB0" />}
                       onClick={handleForceRefresh}
                       variant="outline"
                       colorScheme="blue"
@@ -501,7 +504,7 @@ const NewTab: React.FC = () => {
                   <Tooltip label="Manage Connections" aria-label="Manage Connections">
                     <IconButton
                       aria-label="Manage Connections"
-                      icon={<SettingsIcon />}
+                      icon={<FontAwesomeIcon icon={faCog} color="#6B46C1" />}
                       onClick={onOpen}
                       variant="outline"
                       colorScheme="purple"
@@ -519,13 +522,13 @@ const NewTab: React.FC = () => {
                   <Box flex="1">
                     <VStack spacing={8} align="stretch">
                       <Box>
-                        <Heading size="md" mb={4}>
+                        <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
                           🔥 Recent Updates
                         </Heading>
                         {renderWorkItems(workItems, false)}
                       </Box>
                       <Box>
-                        <Heading size="md" mb={4}>
+                        <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
                           ⏳ Stale Items
                         </Heading>
                         {renderWorkItems(workItems, true)}
@@ -540,11 +543,15 @@ const NewTab: React.FC = () => {
             <VStack spacing={8} align="center" justify="center" height="100vh">
               <Heading>Welcome to Stand-up Report</Heading>
               <Text fontSize="xl" textAlign="center">
-                It seems you haven't connected Jira and GitHub yet.
+                It seems you haven{`'`}t connected Jira and GitHub yet.
                 <br />
                 Please provide tokens for these systems to get started.
               </Text>
-              <Button onClick={onOpen} colorScheme="purple" size="lg" leftIcon={<SettingsIcon />}>
+              <Button
+                onClick={onOpen}
+                colorScheme="purple"
+                size="lg"
+                leftIcon={<FontAwesomeIcon icon={faCog} color="#6B46C1" />}>
                 Connect Systems
               </Button>
             </VStack>
