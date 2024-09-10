@@ -30,6 +30,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { HtmlContent } from './html-content';
 import OpenAI from 'openai';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faJira, faGithub } from '@fortawesome/free-brands-svg-icons';
 
 interface WorkItem {
   type: 'Jira' | 'GitHub';
@@ -242,7 +244,7 @@ const NewTab: React.FC = () => {
           updatedAt: item.updated_at,
           isStale: new Date(item.updated_at) < previousWorkday,
           isDraft: item.draft || false,
-          status: 'Open',
+          status: item.draft ? 'Draft' : '',
         })),
         ...mergedPRs.data.items.map(item => ({
           type: 'GitHub',
@@ -260,86 +262,65 @@ const NewTab: React.FC = () => {
     }
   };
 
-  const renderWorkItems = (items: WorkItem[], isStale: boolean) => (
+  const renderWorkItems = (items: WorkItem[], showStale: boolean) => (
     <List spacing={3}>
       {items
-        .filter(item => item.isStale === isStale)
+        .filter(item => (showStale ? item.isStale : !item.isStale))
         .map((item, index) => (
           <ListItem key={index} p={3} borderWidth={1} borderRadius="md" bg="white" boxShadow="sm">
             <Flex justifyContent="space-between" alignItems="center">
               <Flex alignItems="center" flexGrow={1} mr={2} minWidth={0}>
-                <Badge colorScheme={item.type === 'Jira' ? 'blue' : 'green'} mr={2} flexShrink={0}>
-                  {item.type === 'Jira' ? '🎟️' : '🐙'} {item.type}
-                </Badge>
+                <Box mr={2} flexShrink={0}>
+                  <FontAwesomeIcon
+                    icon={item.type === 'Jira' ? faJira : faGithub}
+                    color={item.type === 'Jira' ? '#0052CC' : '#24292e'}
+                  />
+                </Box>
                 <Link
                   fontWeight="medium"
                   href={item.url}
                   isExternal
                   color="blue.500"
                   display="inline-block"
-                  width="300px"
+                  width="400px"
                   overflow="hidden"
                   whiteSpace="nowrap"
                   textOverflow="ellipsis">
                   {item.title}
                 </Link>
-                {item.type === 'GitHub' && item.isDraft && (
-                  <Badge ml={2} colorScheme="orange" flexShrink={0}>
-                    📝 Draft
-                  </Badge>
-                )}
-                {item.type === 'Jira' && (
-                  <Badge ml={2} colorScheme="purple" flexShrink={0}>
+              </Flex>
+              <Flex alignItems="center" flexShrink={0}>
+                {item.status && (
+                  <Badge fontSize="11px" colorScheme={getStatusColor(item.status)} mr={2}>
                     {item.status}
                   </Badge>
                 )}
+                <Text color="gray.500" fontSize="x-small">
+                  <TimeIcon mr={1} />
+                  {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
+                </Text>
               </Flex>
-              <Text color="gray.500" flexShrink={0} fontSize="x-small">
-                <TimeIcon mr={1} />
-                {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
-              </Text>
             </Flex>
           </ListItem>
         ))}
     </List>
   );
 
-  const renderRecentlyClosedItems = (items: WorkItem[]) => (
-    <List spacing={3}>
-      {items
-        .filter(item => item.status === 'Merged' || item.status === 'Closed')
-        .map((item, index) => (
-          <ListItem key={index} p={3} borderWidth={1} borderRadius="md" bg="white" boxShadow="sm">
-            <Flex justifyContent="space-between" alignItems="center">
-              <Flex alignItems="center" flexGrow={1} mr={2} minWidth={0}>
-                <Badge colorScheme={item.type === 'Jira' ? 'blue' : 'green'} mr={2} flexShrink={0}>
-                  {item.type === 'Jira' ? '🎟️' : '🐙'} {item.type}
-                </Badge>
-                <Link
-                  fontWeight="medium"
-                  href={item.url}
-                  isExternal
-                  color="blue.500"
-                  display="inline-block"
-                  width="300px"
-                  overflow="hidden"
-                  whiteSpace="nowrap"
-                  textOverflow="ellipsis">
-                  {item.title}
-                </Link>
-                <Badge ml={2} colorScheme={item.status === 'Merged' ? 'purple' : 'red'} flexShrink={0}>
-                  {item.status}
-                </Badge>
-              </Flex>
-              <Text color="gray.500" flexShrink={0} fontSize="x-small">
-                <TimeIcon mr={1} />
-                {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
-              </Text>
-            </Flex>
-          </ListItem>
-        ))}
-    </List>
-  );
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Merged':
+      case 'Closed':
+        return 'red';
+      case 'In Progress':
+        return 'blue';
+      case 'In Review':
+        return 'yellow';
+      case 'Draft':
+        return 'orange';
+      default:
+        return 'gray';
+    }
+  };
 
   const callOpenAI = async (prompt: string) => {
     const { openaiToken } = await chrome.storage.local.get('openaiToken');
@@ -548,12 +529,6 @@ const NewTab: React.FC = () => {
                           ⏳ Stale Items
                         </Heading>
                         {renderWorkItems(workItems, true)}
-                      </Box>
-                      <Box>
-                        <Heading size="md" mb={4}>
-                          🏁 Recently Closed Items
-                        </Heading>
-                        {renderRecentlyClosedItems(workItems)}
                       </Box>
                     </VStack>
                   </Box>
