@@ -226,23 +226,30 @@ const NewTab: React.FC = () => {
                 <Badge colorScheme={item.type === 'Jira' ? 'blue' : 'green'} mr={2} flexShrink={0}>
                   {item.type === 'Jira' ? '🎟️' : '🐙'} {item.type}
                 </Badge>
-                <Text fontWeight="medium" isTruncated maxWidth="calc(100% - 100px)">
-                  <Link href={item.url} isExternal color="blue.500">
-                    {item.title} <ExternalLinkIcon mx="2px" />
-                  </Link>
-                  {item.type === 'GitHub' && item.isDraft && (
-                    <Badge ml={2} colorScheme="orange" flexShrink={0}>
-                      📝 Draft
-                    </Badge>
-                  )}
-                </Text>
+                <Link
+                  fontWeight="medium"
+                  href={item.url}
+                  isExternal
+                  color="blue.500"
+                  display="inline-block"
+                  width="300px"
+                  overflow="hidden"
+                  whiteSpace="nowrap"
+                  textOverflow="ellipsis">
+                  {item.title}
+                </Link>
+                {item.type === 'GitHub' && item.isDraft && (
+                  <Badge ml={2} colorScheme="orange" flexShrink={0}>
+                    📝 Draft
+                  </Badge>
+                )}
                 {item.type === 'Jira' && (
                   <Badge ml={2} colorScheme="purple" flexShrink={0}>
                     {item.status}
                   </Badge>
                 )}
               </Flex>
-              <Text fontSize="sm" color="gray.500" flexShrink={0}>
+              <Text color="gray.500" flexShrink={0} fontSize="x-small">
                 <TimeIcon mr={1} />
                 {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
               </Text>
