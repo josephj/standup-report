@@ -37,7 +37,7 @@ interface WorkItem {
   url: string;
   updatedAt: string;
   isStale: boolean;
-  status?: string;
+  status: string;
   isDraft?: boolean;
 }
 
@@ -148,13 +148,15 @@ const NewTab: React.FC = () => {
     }
 
     const inProgressStatuses = ['In Progress', 'In Review'];
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
     const baseUrl = jiraUrl.startsWith('http') ? jiraUrl : `https://${jiraUrl}`;
     const apiUrl = `${baseUrl}/rest/api/2/search`;
     const previousWorkday = getPreviousWorkday();
 
     try {
-      const response = await axios.get<{ issues: JiraIssue[] }>(apiUrl, {
+      const openIssuesResponse = await axios.get<{ issues: JiraIssue[] }>(apiUrl, {
         headers: {
           Authorization: `Bearer ${jiraToken}`,
           'Content-Type': 'application/json',
@@ -165,14 +167,35 @@ const NewTab: React.FC = () => {
         },
       });
 
-      return response.data.issues.map(issue => ({
-        type: 'Jira',
-        title: `${issue.key}: ${issue.fields.summary}`,
-        url: `${baseUrl}/browse/${issue.key}`,
-        updatedAt: issue.fields.updated,
-        isStale: new Date(issue.fields.updated) < previousWorkday,
-        status: issue.fields.status.name,
-      }));
+      const closedIssuesResponse = await axios.get<{ issues: JiraIssue[] }>(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${jiraToken}`,
+          'Content-Type': 'application/json',
+        },
+        params: {
+          jql: `assignee = currentUser() AND status = Closed AND updated >= "${twoDaysAgo.toISOString().split('T')[0]}" ORDER BY updated DESC`,
+          fields: 'id,key,summary,status,updated',
+        },
+      });
+
+      return [
+        ...openIssuesResponse.data.issues.map(issue => ({
+          type: 'Jira',
+          title: `${issue.key}: ${issue.fields.summary}`,
+          url: `${baseUrl}/browse/${issue.key}`,
+          updatedAt: issue.fields.updated,
+          isStale: new Date(issue.fields.updated) < previousWorkday,
+          status: issue.fields.status.name,
+        })),
+        ...closedIssuesResponse.data.issues.map(issue => ({
+          type: 'Jira',
+          title: `${issue.key}: ${issue.fields.summary}`,
+          url: `${baseUrl}/browse/${issue.key}`,
+          updatedAt: issue.fields.updated,
+          isStale: false,
+          status: 'Closed',
+        })),
+      ];
     } catch (error) {
       console.error('Error fetching Jira tickets:', error);
       return [];
@@ -194,21 +217,43 @@ const NewTab: React.FC = () => {
       const { data: user } = await octokit.users.getAuthenticated();
       const username = user.login;
 
-      const response = await octokit.search.issuesAndPullRequests({
+      const openPRs = await octokit.search.issuesAndPullRequests({
         q: `is:open is:pr author:${username}`,
         sort: 'updated',
         order: 'desc',
         per_page: 100,
       });
 
-      return response.data.items.map(item => ({
-        type: 'GitHub',
-        title: item.title,
-        url: item.html_url,
-        updatedAt: item.updated_at,
-        isStale: new Date(item.updated_at) < previousWorkday,
-        isDraft: item.draft || false,
-      }));
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+      const mergedPRs = await octokit.search.issuesAndPullRequests({
+        q: `is:pr is:merged author:${username} merged:>=${twoDaysAgo.toISOString().split('T')[0]}`,
+        sort: 'updated',
+        order: 'desc',
+        per_page: 100,
+      });
+
+      return [
+        ...openPRs.data.items.map(item => ({
+          type: 'GitHub',
+          title: item.title,
+          url: item.html_url,
+          updatedAt: item.updated_at,
+          isStale: new Date(item.updated_at) < previousWorkday,
+          isDraft: item.draft || false,
+          status: 'Open',
+        })),
+        ...mergedPRs.data.items.map(item => ({
+          type: 'GitHub',
+          title: item.title,
+          url: item.html_url,
+          updatedAt: item.updated_at,
+          isStale: false,
+          isDraft: false,
+          status: 'Merged',
+        })),
+      ];
     } catch (error) {
       console.error('Error fetching GitHub PRs:', error);
       return [];
@@ -248,6 +293,43 @@ const NewTab: React.FC = () => {
                     {item.status}
                   </Badge>
                 )}
+              </Flex>
+              <Text color="gray.500" flexShrink={0} fontSize="x-small">
+                <TimeIcon mr={1} />
+                {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
+              </Text>
+            </Flex>
+          </ListItem>
+        ))}
+    </List>
+  );
+
+  const renderRecentlyClosedItems = (items: WorkItem[]) => (
+    <List spacing={3}>
+      {items
+        .filter(item => item.status === 'Merged' || item.status === 'Closed')
+        .map((item, index) => (
+          <ListItem key={index} p={3} borderWidth={1} borderRadius="md" bg="white" boxShadow="sm">
+            <Flex justifyContent="space-between" alignItems="center">
+              <Flex alignItems="center" flexGrow={1} mr={2} minWidth={0}>
+                <Badge colorScheme={item.type === 'Jira' ? 'blue' : 'green'} mr={2} flexShrink={0}>
+                  {item.type === 'Jira' ? '🎟️' : '🐙'} {item.type}
+                </Badge>
+                <Link
+                  fontWeight="medium"
+                  href={item.url}
+                  isExternal
+                  color="blue.500"
+                  display="inline-block"
+                  width="300px"
+                  overflow="hidden"
+                  whiteSpace="nowrap"
+                  textOverflow="ellipsis">
+                  {item.title}
+                </Link>
+                <Badge ml={2} colorScheme={item.status === 'Merged' ? 'purple' : 'red'} flexShrink={0}>
+                  {item.status}
+                </Badge>
               </Flex>
               <Text color="gray.500" flexShrink={0} fontSize="x-small">
                 <TimeIcon mr={1} />
@@ -466,6 +548,12 @@ const NewTab: React.FC = () => {
                           ⏳ Stale Items
                         </Heading>
                         {renderWorkItems(workItems, true)}
+                      </Box>
+                      <Box>
+                        <Heading size="md" mb={4}>
+                          🏁 Recently Closed Items
+                        </Heading>
+                        {renderRecentlyClosedItems(workItems)}
                       </Box>
                     </VStack>
                   </Box>
