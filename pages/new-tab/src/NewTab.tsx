@@ -32,16 +32,19 @@ import { HtmlContent } from './html-content';
 import OpenAI from 'openai';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faJira, faGithub } from '@fortawesome/free-brands-svg-icons';
-import { faSyncAlt, faCog, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faSyncAlt, faCog, faStar, faCalendar } from '@fortawesome/free-solid-svg-icons';
 
 interface WorkItem {
-  type: 'Jira' | 'GitHub';
+  type: 'Jira' | 'GitHub' | 'Calendar';
   title: string;
-  url: string;
+  url?: string;
   updatedAt: string;
   isStale: boolean;
-  status: string;
+  status?: string;
   isDraft?: boolean;
+  start?: string;
+  end?: string;
+  eventStatus?: 'confirmed' | 'tentative' | 'cancelled';
 }
 
 interface JiraIssue {
@@ -54,6 +57,13 @@ interface JiraIssue {
     };
     updated: string;
   };
+}
+
+interface CalendarEvent {
+  summary: string;
+  start: { dateTime: string };
+  end: { dateTime: string };
+  status: 'confirmed' | 'tentative' | 'cancelled';
 }
 
 const theme = extendTheme({
@@ -131,6 +141,7 @@ const NewTab: React.FC = () => {
 
   useEffect(() => {
     fetchWorkItems();
+    fetchCalendarEvents();
   }, [fetchWorkItems]);
 
   const getPreviousWorkday = () => {
@@ -263,32 +274,135 @@ const NewTab: React.FC = () => {
     }
   };
 
-  const renderWorkItems = (items: WorkItem[], showStale: boolean) => (
+  const fetchCalendarEvents = async () => {
+    try {
+      const { googleCalendarToken } = await chrome.storage.local.get('googleCalendarToken');
+      if (!googleCalendarToken) {
+        return;
+      }
+
+      const now = new Date();
+      const previousWorkday = getPreviousWorkday();
+      const timeMin = previousWorkday.toISOString();
+      const timeMax = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+        {
+          headers: {
+            Authorization: `Bearer ${googleCalendarToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // 令牌无效，自动断开连接
+          await chrome.storage.local.remove('googleCalendarToken');
+          setConnectedSystems(prev => prev.filter(sys => sys !== 'Google Calendar'));
+          throw new Error('Google Calendar token is invalid. Disconnected automatically.');
+        }
+        throw new Error('Failed to fetch calendar events');
+      }
+
+      const data = await response.json();
+      const calendarWorkItems: WorkItem[] = data.items
+        .filter((event: CalendarEvent) => {
+          // 检查用户是否参加该事件
+          const attendees = event.attendees || [];
+          const userAttendee = attendees.find(a => a.self);
+          const isAttending = !userAttendee || userAttendee.responseStatus !== 'declined';
+
+          // 检查事件标题是否为"Lunch"或"Home"
+          const ignoredTitles = ['Lunch', 'Home'];
+          const isIgnoredTitle = ignoredTitles.some(title => event.summary.toLowerCase().includes(title.toLowerCase()));
+
+          return isAttending && !isIgnoredTitle;
+        })
+        .map((event: CalendarEvent) => ({
+          type: 'Calendar',
+          title: event.summary,
+          updatedAt: event.start.dateTime || event.start.date,
+          isStale: new Date(event.start.dateTime || event.start.date) < getPreviousWorkday(),
+          start: event.start.dateTime || event.start.date,
+          end: event.end.dateTime || event.end.date,
+          eventStatus: event.status,
+        }));
+
+      setWorkItems(prevItems => [...prevItems, ...calendarWorkItems]);
+    } catch (error) {
+      console.error('Error fetching calendar events:', error);
+    }
+  };
+
+  const isMonday = useCallback(() => {
+    return new Date().getDay() === 1;
+  }, []);
+
+  const getYesterdayOrLastFriday = useCallback(() => {
+    const date = new Date();
+    if (isMonday()) {
+      // 如果是星期一，返回上周五的日期
+      date.setDate(date.getDate() - 3);
+    } else {
+      // 否则返回昨天的日期
+      date.setDate(date.getDate() - 1);
+    }
+    return date;
+  }, [isMonday]);
+
+  const renderWorkItems = (items: WorkItem[], filter: 'ongoing' | 'yesterday' | 'stale') => (
     <List spacing={3}>
       {items
-        .filter(item => (showStale ? item.isStale : !item.isStale))
+        .filter(item => {
+          const itemDate = new Date(item.type === 'Calendar' ? item.start! : item.updatedAt);
+          const yesterdayOrLastFriday = getYesterdayOrLastFriday();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          switch (filter) {
+            case 'ongoing':
+              if (item.type === 'Calendar') {
+                return itemDate >= today;
+              }
+              return !item.isStale && itemDate > yesterdayOrLastFriday;
+            case 'yesterday':
+              if (item.type === 'Calendar') {
+                return itemDate >= yesterdayOrLastFriday && itemDate < today;
+              }
+              return !item.isStale && itemDate <= yesterdayOrLastFriday && itemDate >= getPreviousWorkday();
+            case 'stale':
+              return item.isStale;
+          }
+        })
         .map((item, index) => (
           <ListItem key={index} p={3} borderWidth={1} borderRadius="md" bg="white" boxShadow="sm">
             <Flex justifyContent="space-between" alignItems="center">
               <Flex alignItems="center" flexGrow={1} mr={2} minWidth={0}>
                 <Box mr={2} flexShrink={0}>
                   <FontAwesomeIcon
-                    icon={item.type === 'Jira' ? faJira : faGithub}
-                    color={item.type === 'Jira' ? '#0052CC' : '#24292e'}
+                    icon={item.type === 'Jira' ? faJira : item.type === 'GitHub' ? faGithub : faCalendar}
+                    color={item.type === 'Jira' ? '#0052CC' : item.type === 'GitHub' ? '#24292e' : '#4285F4'}
                   />
                 </Box>
-                <Link
-                  fontWeight="medium"
-                  href={item.url}
-                  isExternal
-                  color="blue.500"
-                  display="inline-block"
-                  width="400px"
-                  overflow="hidden"
-                  whiteSpace="nowrap"
-                  textOverflow="ellipsis">
-                  {item.title}
-                </Link>
+                {item.type === 'Calendar' ? (
+                  <Text fontWeight="medium" overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">
+                    {item.title}
+                  </Text>
+                ) : (
+                  <Link
+                    fontWeight="medium"
+                    href={item.url}
+                    isExternal
+                    color="blue.500"
+                    display="inline-block"
+                    width="400px"
+                    overflow="hidden"
+                    whiteSpace="nowrap"
+                    textOverflow="ellipsis">
+                    {item.title}
+                  </Link>
+                )}
               </Flex>
               <Flex alignItems="center" flexShrink={0}>
                 {item.status && (
@@ -296,9 +410,16 @@ const NewTab: React.FC = () => {
                     {item.status}
                   </Badge>
                 )}
+                {item.type === 'Calendar' && item.eventStatus === 'tentative' && (
+                  <Badge fontSize="11px" colorScheme="yellow" mr={2}>
+                    Maybe
+                  </Badge>
+                )}
                 <Text color="gray.500" fontSize="x-small">
                   <TimeIcon mr={1} />
-                  {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
+                  {item.type === 'Calendar'
+                    ? `${new Date(item.start!).toLocaleTimeString()} - ${new Date(item.end!).toLocaleTimeString()}`
+                    : formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
                 </Text>
               </Flex>
             </Flex>
@@ -523,15 +644,21 @@ const NewTab: React.FC = () => {
                     <VStack spacing={8} align="stretch">
                       <Box>
                         <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
-                          🔥 Recent Updates
+                          🔥 Ongoing
                         </Heading>
-                        {renderWorkItems(workItems, false)}
+                        {renderWorkItems(workItems, 'ongoing')}
+                      </Box>
+                      <Box>
+                        <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
+                          {isMonday() ? '📅 Last Friday' : '⏰ Yesterday'}
+                        </Heading>
+                        {renderWorkItems(workItems, 'yesterday')}
                       </Box>
                       <Box>
                         <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
                           ⏳ Stale Items
                         </Heading>
-                        {renderWorkItems(workItems, true)}
+                        {renderWorkItems(workItems, 'stale')}
                       </Box>
                     </VStack>
                   </Box>

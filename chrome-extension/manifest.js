@@ -37,7 +37,15 @@ const manifest = deepmerge(
       'tabs',
       'notifications',
       'activeTab', // 添加 activeTab 权限
+      'identity',
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://accounts.google.com/o/oauth2/revoke',
     ],
+    oauth2: {
+      client_id: '1016046366095-cv54v5gab9v5bd8nma2b1rssgflp0ud9.apps.googleusercontent.com',
+      scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+    },
+    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr+5K51zKhMWLI9+joH4vMmmTy5ul7nsx5jjgelJtL8b5AZSczG3OjuzQKrerFhp3zxDBFjYqauQ64JyerjbjFuCIoJrkg61xnYv8FPF5YSJpmQSY1BzKsqlcqp+sg/bnGjei3fOAd6seIhS9lIAcx3vmDXC0MrvLUPHzDoMJJGqnX+eaWrINHQgCBIa75WHFI+Rs4wXR0q5qbus2S5lFVZT01xacR6IGDWVgPVJnBAlU10LRF1qZJlY01Rjt3T64ut+gXGd27aboZn1DLK3BHXFd1GJgoevBwdFUuyexbQMFpoYHrW44hnlmO0+CWnWV87GvevRD7VmynZWTGCtaVwIDAQAB',
     options_page: 'options/index.html',
     background: {
       service_worker: 'background.iife.js',
