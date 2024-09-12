@@ -376,7 +376,15 @@ const NewTab: React.FC = () => {
           }
         })
         .map((item, index) => (
-          <ListItem key={index} p={3} borderWidth={1} borderRadius="md" bg="white" boxShadow="sm">
+          <ListItem
+            key={index}
+            p={3}
+            borderWidth={1}
+            borderRadius="md"
+            bg="white"
+            boxShadow="sm"
+            opacity={item.type === 'Calendar' && new Date(item.end!) < new Date() ? 0.5 : 1}
+            transition="opacity 0.3s">
             <Flex justifyContent="space-between" alignItems="center">
               <Flex alignItems="center" flexGrow={1} mr={2} minWidth={0}>
                 <Box mr={2} flexShrink={0}>
