@@ -27,19 +27,16 @@ const manifest = deepmerge(
     name: '__MSG_extensionName__',
     version: packageJson.version,
     description: '__MSG_extensionDescription__',
-    host_permissions: [
-      'https://*.atlassian.net/*', // Jira Cloud
-      'https://github.com/*', // GitHub
-    ],
+    host_permissions: ['https://*.atlassian.net/*', 'https://github.com/*'],
     permissions: [
       'storage',
-      'scripting',
-      'tabs',
-      'notifications',
-      'activeTab', // 添加 activeTab 权限
+      // 'scripting',
+      // 'tabs',
+      // 'notifications',
+      // 'activeTab',
       'identity',
-      'https://www.googleapis.com/auth/calendar.readonly',
-      'https://accounts.google.com/o/oauth2/revoke',
+      // 'https://www.googleapis.com/auth/calendar.readonly',
+      // 'https://accounts.google.com/o/oauth2/revoke',
     ],
     oauth2: {
       client_id: '1016046366095-cv54v5gab9v5bd8nma2b1rssgflp0ud9.apps.googleusercontent.com',
@@ -61,21 +58,8 @@ const manifest = deepmerge(
     icons: {
       128: 'icon-128.png',
     },
-    content_scripts: [
-      {
-        matches: ['http://*/*', 'https://*/*', '<all_urls>'],
-        js: ['content/index.iife.js'],
-      },
-      {
-        matches: ['http://*/*', 'https://*/*', '<all_urls>'],
-        js: ['content-ui/index.iife.js'],
-      },
-      {
-        matches: ['http://*/*', 'https://*/*', '<all_urls>'],
-        css: ['content.css'], // public folder
-      },
-    ],
-    devtools_page: 'devtools/index.html',
+    content_scripts: [],
+    // devtools_page: 'devtools/index.html',
     web_accessible_resources: [
       {
         resources: ['*.js', '*.css', '*.svg', 'icon-128.png', 'icon-34.png'],
