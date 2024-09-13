@@ -45,6 +45,9 @@ interface WorkItem {
   start?: string;
   end?: string;
   eventStatus?: 'confirmed' | 'tentative' | 'cancelled';
+  isAuthor?: boolean;
+  authorAvatarUrl?: string;
+  assigneeAvatarUrl?: string;
 }
 
 interface JiraIssue {
@@ -56,6 +59,11 @@ interface JiraIssue {
       name: string;
     };
     updated: string;
+    assignee?: {
+      avatarUrls: {
+        '24x24': string;
+      };
+    };
   };
 }
 
@@ -188,7 +196,7 @@ const NewTab: React.FC = () => {
         },
         params: {
           jql: `assignee = currentUser() AND status IN (${inProgressStatuses.map(status => `"${status}"`).join(', ')}) ORDER BY updated DESC`,
-          fields: 'id,key,summary,status,updated',
+          fields: 'id,key,summary,status,updated,assignee',
         },
       });
 
@@ -199,26 +207,28 @@ const NewTab: React.FC = () => {
         },
         params: {
           jql: `assignee = currentUser() AND status = Closed AND updated >= "${twoDaysAgo.toISOString().split('T')[0]}" ORDER BY updated DESC`,
-          fields: 'id,key,summary,status,updated',
+          fields: 'id,key,summary,status,updated,assignee',
         },
       });
 
       return [
         ...openIssuesResponse.data.issues.map(issue => ({
-          type: 'Jira',
+          type: 'Jira' as const,
           title: `${issue.key}: ${issue.fields.summary}`,
           url: `${baseUrl}/browse/${issue.key}`,
           updatedAt: issue.fields.updated,
           isStale: new Date(issue.fields.updated) < previousWorkday,
           status: issue.fields.status.name,
+          assigneeAvatarUrl: issue.fields.assignee?.avatarUrls['24x24'],
         })),
         ...closedIssuesResponse.data.issues.map(issue => ({
-          type: 'Jira',
+          type: 'Jira' as const,
           title: `${issue.key}: ${issue.fields.summary}`,
           url: `${baseUrl}/browse/${issue.key}`,
           updatedAt: issue.fields.updated,
           isStale: false,
           status: 'Closed',
+          assigneeAvatarUrl: issue.fields.assignee?.avatarUrls['24x24'],
         })),
       ];
     } catch (error) {
@@ -249,6 +259,14 @@ const NewTab: React.FC = () => {
         per_page: 100,
       });
 
+      // 獲取用戶參與但不是作者的 PR
+      const participatedPRs = await octokit.search.issuesAndPullRequests({
+        q: `is:pr -author:${username} commenter:${username}`,
+        sort: 'updated',
+        order: 'desc',
+        per_page: 100,
+      });
+
       const twoDaysAgo = new Date();
       twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
@@ -261,22 +279,37 @@ const NewTab: React.FC = () => {
 
       return [
         ...openPRs.data.items.map(item => ({
-          type: 'GitHub',
+          type: 'GitHub' as const,
           title: item.title,
           url: item.html_url,
           updatedAt: item.updated_at,
           isStale: new Date(item.updated_at) < previousWorkday,
           isDraft: item.draft || false,
-          status: item.draft ? 'Draft' : '',
+          status: item.draft ? 'Draft' : 'Open',
+          isAuthor: true,
+          authorAvatarUrl: item.user?.avatar_url,
+        })),
+        ...participatedPRs.data.items.map(item => ({
+          type: 'GitHub' as const,
+          title: item.title,
+          url: item.html_url,
+          updatedAt: item.updated_at,
+          isStale: new Date(item.updated_at) < previousWorkday,
+          isDraft: item.draft || false,
+          status: 'Participated',
+          isAuthor: false,
+          authorAvatarUrl: item.user?.avatar_url,
         })),
         ...mergedPRs.data.items.map(item => ({
-          type: 'GitHub',
+          type: 'GitHub' as const,
           title: item.title,
           url: item.html_url,
           updatedAt: item.updated_at,
           isStale: false,
           isDraft: false,
           status: 'Merged',
+          isAuthor: true,
+          authorAvatarUrl: item.user?.avatar_url,
         })),
       ];
     } catch (error) {
@@ -407,6 +440,28 @@ const NewTab: React.FC = () => {
                     color={item.type === 'Jira' ? '#0052CC' : item.type === 'GitHub' ? '#24292e' : '#4285F4'}
                   />
                 </Box>
+                {item.type === 'GitHub' && item.authorAvatarUrl && (
+                  <Box mr={2} flexShrink={0}>
+                    <img
+                      src={item.authorAvatarUrl}
+                      alt="Author avatar"
+                      width="24"
+                      height="24"
+                      style={{ borderRadius: '50%' }}
+                    />
+                  </Box>
+                )}
+                {item.type === 'Jira' && item.assigneeAvatarUrl && (
+                  <Box mr={2} flexShrink={0}>
+                    <img
+                      src={item.assigneeAvatarUrl}
+                      alt="Assignee avatar"
+                      width="24"
+                      height="24"
+                      style={{ borderRadius: '50%' }}
+                    />
+                  </Box>
+                )}
                 {item.type === 'Calendar' ? (
                   <Text fontWeight="medium" overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">
                     {item.title}
