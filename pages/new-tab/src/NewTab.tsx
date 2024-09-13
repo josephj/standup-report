@@ -61,9 +61,10 @@ interface JiraIssue {
 
 interface CalendarEvent {
   summary: string;
-  start: { dateTime: string };
-  end: { dateTime: string };
+  start: { dateTime: string; date?: string };
+  end: { dateTime: string; date?: string };
   status: 'confirmed' | 'tentative' | 'cancelled';
+  attendees?: Array<{ self?: boolean; responseStatus?: string }>;
 }
 
 const theme = extendTheme({
@@ -93,6 +94,7 @@ const NewTab: React.FC = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [hasOpenAIToken, setHasOpenAIToken] = useState(false);
   const [hasValidTokens, setHasValidTokens] = useState(false);
+  const [cachedReport, setCachedReport] = useState<string | null>(null);
 
   useEffect(() => {
     const checkTokens = async () => {
@@ -108,6 +110,15 @@ const NewTab: React.FC = () => {
       setHasOpenAIToken(Boolean(openaiToken));
     };
     checkOpenAIToken();
+  }, []);
+
+  useEffect(() => {
+    // Load cached report from chrome.storage.local when component mounts
+    chrome.storage.local.get('cachedReport', result => {
+      if (result.cachedReport) {
+        setCachedReport(result.cachedReport);
+      }
+    });
   }, []);
 
   const fetchWithCache = useCallback(async (url: string, fetchFunction: () => Promise<WorkItem[]>) => {
@@ -481,10 +492,25 @@ const NewTab: React.FC = () => {
         { signal: abortControllerRef.current.signal },
       );
 
+      let fullResponse = '';
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || '';
-        setAiGeneratedReport(prev => prev + content);
+        fullResponse += content;
+        setAiGeneratedReport(fullResponse);
+
+        // Check if this is the last chunk
+        if (chunk.choices[0]?.finish_reason === 'stop') {
+          console.log('Stream completed');
+          break;
+        }
       }
+
+      // Stream is finished here
+      setIsReportGenerated(true);
+
+      // Cache the generated report using chrome.storage.local
+      chrome.storage.local.set({ cachedReport: fullResponse });
+      setCachedReport(fullResponse);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         console.log('Fetch aborted');
@@ -510,7 +536,6 @@ const NewTab: React.FC = () => {
 
     try {
       await callOpenAI(fullPrompt);
-      setIsReportGenerated(true);
     } catch (error) {
       console.error('Error generating report:', error);
     } finally {
@@ -572,6 +597,23 @@ const NewTab: React.FC = () => {
                   Regenerate Report
                 </Button>
               )}
+            </Flex>
+          </>
+        ) : cachedReport ? (
+          <>
+            <HtmlContent sx={{ p: { _last: { mb: 0 } }, pb: '60px' }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{cachedReport}</ReactMarkdown>
+            </HtmlContent>
+            <Flex position="absolute" bottom={4} right={4} gap={2}>
+              <Button
+                onClick={generateStandupReport}
+                isLoading={isGeneratingReport}
+                loadingText="Generating..."
+                colorScheme="purple"
+                size="sm"
+                leftIcon={<FontAwesomeIcon icon={faStar} color="#6B46C1" />}>
+                Generate New Report
+              </Button>
             </Flex>
           </>
         ) : (
