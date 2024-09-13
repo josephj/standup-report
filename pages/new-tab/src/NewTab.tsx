@@ -419,6 +419,10 @@ const NewTab: React.FC = () => {
               }
               return !item.isStale && itemDate <= yesterdayOrLastFriday && itemDate >= getPreviousWorkday();
             case 'stale':
+              // 排除已參與但已關閉的 GitHub PR
+              if (item.type === 'GitHub' && !item.isAuthor && item.status === 'Participated') {
+                return false;
+              }
               return item.isStale;
           }
         })
