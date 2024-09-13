@@ -286,27 +286,30 @@ const NewTab: React.FC = () => {
       const timeMin = previousWorkday.toISOString();
       const timeMax = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
 
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
-        {
-          headers: {
-            Authorization: `Bearer ${googleCalendarToken}`,
+      // 尝试从缓存中获取日历事件
+      const calendarEvents = await fetchWithCache('google_calendar', async () => {
+        const response = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+          {
+            headers: {
+              Authorization: `Bearer ${googleCalendarToken}`,
+            },
           },
-        },
-      );
+        );
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          // 令牌无效，自动断开连接
-          await chrome.storage.local.remove('googleCalendarToken');
-          setConnectedSystems(prev => prev.filter(sys => sys !== 'Google Calendar'));
-          throw new Error('Google Calendar token is invalid. Disconnected automatically.');
+        if (!response.ok) {
+          if (response.status === 401) {
+            await chrome.storage.local.remove('googleCalendarToken');
+            setConnectedSystems(prev => prev.filter(sys => sys !== 'Google Calendar'));
+            throw new Error('Google Calendar token is invalid. Disconnected automatically.');
+          }
+          throw new Error('Failed to fetch calendar events');
         }
-        throw new Error('Failed to fetch calendar events');
-      }
 
-      const data = await response.json();
-      const calendarWorkItems: WorkItem[] = data.items
+        return response.json();
+      });
+
+      const calendarWorkItems: WorkItem[] = calendarEvents.items
         .filter((event: CalendarEvent) => {
           // 检查用户是否参加该事件
           const attendees = event.attendees || [];
@@ -601,12 +604,13 @@ const NewTab: React.FC = () => {
   const handleForceRefresh = useCallback(async () => {
     setIsLoading(true);
     try {
-      await chrome.storage.local.remove(['cache_jira', 'cache_github']);
+      await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_google_calendar']);
       await fetchWorkItems();
+      await fetchCalendarEvents();
     } finally {
       setIsLoading(false);
     }
-  }, [fetchWorkItems]);
+  }, [fetchWorkItems, fetchCalendarEvents]);
 
   return (
     <ChakraProvider theme={theme}>
