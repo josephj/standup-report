@@ -412,14 +412,18 @@ const NewTab: React.FC = () => {
               if (item.type === 'Calendar') {
                 return itemDate >= today;
               }
-              return !item.isStale && itemDate > yesterdayOrLastFriday;
+              return !item.isStale && itemDate > yesterdayOrLastFriday && item.status !== 'Merged';
             case 'yesterday':
               if (item.type === 'Calendar') {
                 return itemDate >= yesterdayOrLastFriday && itemDate < today;
               }
+              if (item.type === 'GitHub' && item.status === 'Merged') {
+                const twoDaysAgo = new Date(today);
+                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                return itemDate >= twoDaysAgo && itemDate < today;
+              }
               return !item.isStale && itemDate <= yesterdayOrLastFriday && itemDate >= getPreviousWorkday();
             case 'stale':
-              // 排除已參與但已關閉的 GitHub PR
               if (item.type === 'GitHub' && !item.isAuthor && item.status === 'Participated') {
                 return false;
               }
