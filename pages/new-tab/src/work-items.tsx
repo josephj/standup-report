@@ -43,7 +43,13 @@ const filterWorkItems = (item: WorkItem, filter: 'ongoing' | 'yesterday' | 'stal
         }
       }
 
-      return !item.isStale && isToday && item.status !== 'Merged';
+      if (item.type === 'Jira') {
+        if (['Open', 'In Progress'].includes(item?.status || '')) {
+          return isYesterdayOrLastFriday;
+        }
+      }
+
+      return isToday && item.status !== 'Merged';
     case 'yesterday':
       if (item.type === 'GitHub') {
         if (item.status === 'Merged' || item.status === 'Participated') {
