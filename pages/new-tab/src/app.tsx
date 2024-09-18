@@ -14,11 +14,11 @@ import {
   getYesterdayOrLastFriday,
   isMonday,
   promptTemplate,
+  theme,
 } from './lib';
 import type { WorkItem } from './lib';
 import { Header } from './header';
-import { fetchWithCache, fetchGitHubItems, fetchCalendarItems, callOpenAI } from './lib/utils';
-import { chakraTheme } from './chakra-theme';
+import { fetchWithCache, fetchGitHubItems, fetchGcalItems, callOpenAI } from './lib/utils';
 
 const AppContent = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -63,8 +63,8 @@ const AppContent = () => {
     try {
       const jiraItems = await fetchWithCache<WorkItem[]>('jira', fetchJiraItems);
       const githubItems = await fetchWithCache<WorkItem[]>('github', fetchGitHubItems);
-      const calendarItems = await fetchWithCache<WorkItem[]>('calendar', fetchCalendarItems);
-      setWorkItems([...jiraItems, ...githubItems, ...calendarItems]);
+      const gcalItems = await fetchWithCache<WorkItem[]>('gcal', fetchGcalItems);
+      setWorkItems([...jiraItems, ...githubItems, ...gcalItems]);
     } catch (error) {
       console.error('Error fetching work items:', error);
     } finally {
@@ -120,7 +120,7 @@ const AppContent = () => {
   const handleForceRefresh = useCallback(async () => {
     setLoading.on();
     try {
-      await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_calendar']);
+      await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_gcal']);
       await fetchWorkItems();
     } finally {
       setLoading.off();
@@ -128,7 +128,7 @@ const AppContent = () => {
   }, [fetchWorkItems, setLoading]);
 
   return (
-    <ChakraProvider theme={chakraTheme}>
+    <ChakraProvider theme={theme}>
       <Flex minHeight="100vh" p={8} justifyContent="center">
         <Box maxWidth="1400px" width="100%">
           {hasValidTokens ? (
