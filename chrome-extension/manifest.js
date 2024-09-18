@@ -25,17 +25,7 @@ const manifest = {
   name: '__MSG_extensionName__',
   version: packageJson.version,
   description: '__MSG_extensionDescription__',
-  host_permissions: ['https://*.atlassian.net/*', 'https://github.com/*'],
-  permissions: [
-    'storage',
-    // 'scripting',
-    // 'tabs',
-    // 'notifications',
-    // 'activeTab',
-    'identity',
-    // 'https://www.googleapis.com/auth/calendar.readonly',
-    // 'https://accounts.google.com/o/oauth2/revoke',
-  ],
+  permissions: ['storage', 'identity'],
   oauth2: {
     client_id: '1016046366095-cv54v5gab9v5bd8nma2b1rssgflp0ud9.apps.googleusercontent.com',
     scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
@@ -57,7 +47,6 @@ const manifest = {
     128: 'icon-128.png',
   },
   content_scripts: [],
-  // devtools_page: 'devtools/index.html',
   web_accessible_resources: [
     {
       resources: ['*.js', '*.css', '*.svg', 'icon-128.png', 'icon-34.png'],
