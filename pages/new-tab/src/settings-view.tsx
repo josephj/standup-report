@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -23,18 +23,15 @@ import {
 import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGithub, faJira } from '@fortawesome/free-brands-svg-icons';
+import { faGithub, faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
 import { faRobot, faCog } from '@fortawesome/free-solid-svg-icons';
-import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { faGoogle } from '@fortawesome/free-brands-svg-icons';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
-interface ConnectSystemsModalProps {
+type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onConnect: (systems: string[]) => void;
-  onSettingsSaved: () => void;
-  connectedSystems: string[];
-}
+  onSave: () => void;
+};
 
 interface SystemConfig {
   name: string;
@@ -182,13 +179,7 @@ const systems: SystemConfig[] = [
   },
 ];
 
-export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
-  isOpen,
-  onClose,
-  onConnect,
-  onSettingsSaved,
-  connectedSystems,
-}) => {
+export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
   const [tokens, setTokens] = useState<Record<string, string>>({});
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [tokenValidation, setTokenValidation] = useState<Record<string, boolean | null>>({});
@@ -303,8 +294,7 @@ export const ConnectSystemsModal: React.FC<ConnectSystemsModalProps> = ({
       }
     });
 
-    onConnect(newConnectedSystems);
-    onSettingsSaved();
+    onSave();
     toast({
       title: 'Settings saved successfully',
       status: 'success',
