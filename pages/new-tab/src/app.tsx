@@ -14,7 +14,6 @@ import {
   getYesterdayOrLastFriday,
   isMonday,
   promptTemplate,
-  theme,
 } from './lib';
 import type { WorkItem } from './lib';
 import { Header } from './header';
@@ -128,78 +127,76 @@ const AppContent = () => {
   }, [fetchWorkItems, setLoading]);
 
   return (
-    <ChakraProvider theme={theme}>
-      <Flex minHeight="100vh" p={8} justifyContent="center">
-        <Box maxWidth="1400px" width="100%">
-          {hasValidTokens ? (
-            <VStack spacing={8} align="stretch">
-              <Header isLoading={isLoading} onForceRefresh={handleForceRefresh} onOpenSettings={onOpen} />
-              {isLoading ? (
-                <CenteredSpinner />
-              ) : (
-                <Flex direction={{ base: 'column', lg: 'row' }} gap={8}>
-                  <Box flex="1">
-                    <VStack spacing={8} align="stretch">
-                      <Box>
-                        <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
-                          🔥 Ongoing
-                        </Heading>
-                        <WorkItems
-                          items={workItems}
-                          filter="ongoing"
-                          getYesterdayOrLastFriday={getYesterdayOrLastFriday}
-                          getPreviousWorkday={getPreviousWorkday}
-                          getStatusColor={getStatusColor}
-                        />
-                      </Box>
-                      <Box>
-                        <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
-                          {isMonday() ? '📅 Last Friday' : '⏰ Yesterday'}
-                        </Heading>
-                        <WorkItems
-                          items={workItems}
-                          filter="yesterday"
-                          getYesterdayOrLastFriday={getYesterdayOrLastFriday}
-                          getPreviousWorkday={getPreviousWorkday}
-                          getStatusColor={getStatusColor}
-                        />
-                      </Box>
-                      <Box>
-                        <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
-                          ⏳ Stale Items
-                        </Heading>
-                        <WorkItems
-                          items={workItems}
-                          filter="stale"
-                          getYesterdayOrLastFriday={getYesterdayOrLastFriday}
-                          getPreviousWorkday={getPreviousWorkday}
-                          getStatusColor={getStatusColor}
-                        />
-                      </Box>
-                    </VStack>
-                  </Box>
-                  <SummarySection
-                    hasOpenAIToken={hasOpenAIToken}
-                    aiGeneratedReport={aiGeneratedReport}
-                    isGeneratingReport={isGeneratingReport}
-                    isReportGenerated={isReportGenerated}
-                    cachedReport={cachedReport}
-                    onOpen={onOpen}
-                    onGenerateReport={handleGenerateReport}
-                    abortControllerRef={abortControllerRef}
-                    setIsGeneratingReport={setIsGeneratingReport}
-                  />
-                </Flex>
-              )}
-            </VStack>
-          ) : (
-            <ZeroState onOpenSettings={onOpen} />
-          )}
+    <Flex minHeight="100vh" p={8} justifyContent="center">
+      <Box maxWidth="1400px" width="100%">
+        {hasValidTokens ? (
+          <VStack spacing={8} align="stretch">
+            <Header isLoading={isLoading} onForceRefresh={handleForceRefresh} onOpenSettings={onOpen} />
+            {isLoading ? (
+              <CenteredSpinner />
+            ) : (
+              <Flex direction={{ base: 'column', lg: 'row' }} gap={8}>
+                <Box flex="1">
+                  <VStack spacing={8} align="stretch">
+                    <Box>
+                      <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
+                        🔥 Ongoing
+                      </Heading>
+                      <WorkItems
+                        items={workItems}
+                        filter="ongoing"
+                        getYesterdayOrLastFriday={getYesterdayOrLastFriday}
+                        getPreviousWorkday={getPreviousWorkday}
+                        getStatusColor={getStatusColor}
+                      />
+                    </Box>
+                    <Box>
+                      <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
+                        {isMonday() ? '📅 Last Friday' : '⏰ Yesterday'}
+                      </Heading>
+                      <WorkItems
+                        items={workItems}
+                        filter="yesterday"
+                        getYesterdayOrLastFriday={getYesterdayOrLastFriday}
+                        getPreviousWorkday={getPreviousWorkday}
+                        getStatusColor={getStatusColor}
+                      />
+                    </Box>
+                    <Box>
+                      <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
+                        ⏳ Stale Items
+                      </Heading>
+                      <WorkItems
+                        items={workItems}
+                        filter="stale"
+                        getYesterdayOrLastFriday={getYesterdayOrLastFriday}
+                        getPreviousWorkday={getPreviousWorkday}
+                        getStatusColor={getStatusColor}
+                      />
+                    </Box>
+                  </VStack>
+                </Box>
+                <SummarySection
+                  hasOpenAIToken={hasOpenAIToken}
+                  aiGeneratedReport={aiGeneratedReport}
+                  isGeneratingReport={isGeneratingReport}
+                  isReportGenerated={isReportGenerated}
+                  cachedReport={cachedReport}
+                  onOpen={onOpen}
+                  onGenerateReport={handleGenerateReport}
+                  abortControllerRef={abortControllerRef}
+                  setIsGeneratingReport={setIsGeneratingReport}
+                />
+              </Flex>
+            )}
+          </VStack>
+        ) : (
+          <ZeroState onOpenSettings={onOpen} />
+        )}
 
-          <SettingsView isOpen={isOpen} onClose={onClose} onSave={handleSaveSetting} />
-        </Box>
-      </Flex>
-    </ChakraProvider>
+        <SettingsView isOpen={isOpen} onClose={onClose} onSave={handleSaveSetting} />
+      </Box>
+    </Flex>
   );
 };
 

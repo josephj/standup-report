@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 // import '@extension/ui/lib/global.css';
 import { ChakraProvider } from '@chakra-ui/react';
 import { App } from '@src/app';
-import { chakraTheme } from './chakra-theme';
+import { theme } from './lib';
 
 function init() {
   const appContainer = document.querySelector('#app-container');
@@ -13,7 +13,7 @@ function init() {
   const root = createRoot(appContainer);
 
   root.render(
-    <ChakraProvider theme={chakraTheme}>
+    <ChakraProvider theme={theme}>
       <App />
     </ChakraProvider>,
   );

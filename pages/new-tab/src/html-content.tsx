@@ -1,7 +1,7 @@
 import { Box } from '@chakra-ui/react';
 import type { BoxProps } from '@chakra-ui/react';
 import { forwardRef } from 'react';
-import { HtmlContent as ChakraHtmlContentTheme } from './chakra-theme/html-content';
+import { HtmlContent as ChakraHtmlContentTheme } from './lib/theme/html-content';
 
 /**
  * This component is only to be used for "dangerouslySetInnerHTML"
