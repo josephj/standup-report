@@ -79,7 +79,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                   loadingText="Regenerating..."
                   colorScheme="purple"
                   size="sm"
-                  leftIcon={<FontAwesomeIcon icon={faSyncAlt} color="white" />}>
+                  leftIcon={<FontAwesomeIcon icon={faSyncAlt} color="#6B46C1" />}>
                   Regenerate Report
                 </Button>
               )}
@@ -111,7 +111,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
               colorScheme="purple"
               variant="outline"
               size="sm"
-              leftIcon={<FontAwesomeIcon icon={faStar} color="white" />}>
+              leftIcon={<FontAwesomeIcon icon={faStar} color="#6B46C1" />}>
               Generate Report
             </Button>
           </Flex>
