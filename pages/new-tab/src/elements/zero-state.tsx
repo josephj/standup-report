@@ -20,7 +20,7 @@ export const ZeroState: React.FC<ZeroStateProps> = ({ onOpenSettings }) => {
         onClick={onOpenSettings}
         colorScheme="purple"
         size="lg"
-        leftIcon={<FontAwesomeIcon icon={faCog} color="#6B46C1" />}>
+        leftIcon={<FontAwesomeIcon icon={faCog} color="white" />}>
         Connect Systems
       </Button>
     </VStack>

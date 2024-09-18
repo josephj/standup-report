@@ -49,7 +49,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
             <Text mb={4} textAlign="center">
               To generate a summary, please provide an OpenAI API key in the settings.
             </Text>
-            <Button onClick={onOpen} colorScheme="purple" leftIcon={<FontAwesomeIcon icon={faCog} color="#6B46C1" />}>
+            <Button onClick={onOpen} colorScheme="purple" leftIcon={<FontAwesomeIcon icon={faCog} color="white" />}>
               Open Settings
             </Button>
           </Flex>
@@ -79,7 +79,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                   loadingText="Regenerating..."
                   colorScheme="purple"
                   size="sm"
-                  leftIcon={<FontAwesomeIcon icon={faSyncAlt} color="#6B46C1" />}>
+                  leftIcon={<FontAwesomeIcon icon={faSyncAlt} color="white" />}>
                   Regenerate Report
                 </Button>
               )}
@@ -97,7 +97,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                 loadingText="Generating..."
                 colorScheme="purple"
                 size="sm"
-                leftIcon={<FontAwesomeIcon icon={faStar} color="#6B46C1" />}>
+                leftIcon={<FontAwesomeIcon icon={faStar} color="white" />}>
                 Generate New Report
               </Button>
             </Flex>
@@ -111,7 +111,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
               colorScheme="purple"
               variant="outline"
               size="sm"
-              leftIcon={<FontAwesomeIcon icon={faStar} color="#6B46C1" />}>
+              leftIcon={<FontAwesomeIcon icon={faStar} color="white" />}>
               Generate Report
             </Button>
           </Flex>

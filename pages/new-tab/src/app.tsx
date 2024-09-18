@@ -1,12 +1,12 @@
 import { withErrorBoundary, withSuspense } from '@extension/shared';
-import { Box, VStack, Heading, useDisclosure, Flex, ChakraProvider, useBoolean } from '@chakra-ui/react';
+import { Box, VStack, Heading, useDisclosure, Flex, useBoolean } from '@chakra-ui/react';
 import { t } from '@extension/i18n';
 import { useState, useCallback, useEffect, useRef } from 'react';
 
 import { CenteredSpinner, ZeroState } from './elements';
 import { SettingsView } from './settings-view';
 import { SummarySection } from './summary-section';
-import { WorkItems } from './work-item';
+import { WorkItems } from './work-items';
 import {
   fetchJiraItems,
   getPreviousWorkday,
@@ -172,6 +172,7 @@ const AppContent = () => {
                         getYesterdayOrLastFriday={getYesterdayOrLastFriday}
                         getPreviousWorkday={getPreviousWorkday}
                         getStatusColor={getStatusColor}
+                        emptyMessage="Great job! No stale items. Keep up the good work!" // Add this line
                       />
                     </Box>
                   </VStack>
