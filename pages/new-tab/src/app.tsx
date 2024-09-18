@@ -7,14 +7,7 @@ import { WorkItemsSkeleton, ZeroState } from './elements';
 import { SettingsView } from './settings-view';
 import { SummarySection } from './summary-section';
 import { WorkItems } from './work-items';
-import {
-  fetchJiraItems,
-  getPreviousWorkday,
-  getStatusColor,
-  getYesterdayOrLastFriday,
-  isMonday,
-  promptTemplate,
-} from './lib';
+import { fetchJiraItems, isMonday, promptTemplate } from './lib';
 import type { WorkItem } from './lib';
 import { Header } from './header';
 import { fetchWithCache, fetchGitHubItems, fetchGcalItems, callOpenAI } from './lib/utils';
@@ -159,33 +152,13 @@ const AppContent = () => {
                     <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
                       🔥 Ongoing
                     </Heading>
-                    {isLoading ? (
-                      <WorkItemsSkeleton />
-                    ) : (
-                      <WorkItems
-                        items={workItems}
-                        filter="ongoing"
-                        getYesterdayOrLastFriday={getYesterdayOrLastFriday}
-                        getPreviousWorkday={getPreviousWorkday}
-                        getStatusColor={getStatusColor}
-                      />
-                    )}
+                    {isLoading ? <WorkItemsSkeleton /> : <WorkItems items={workItems} filter="ongoing" />}
                   </Box>
                   <Box>
                     <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
                       {isMonday() ? '📅 Last Friday' : '⏰ Yesterday'}
                     </Heading>
-                    {isLoading ? (
-                      <WorkItemsSkeleton />
-                    ) : (
-                      <WorkItems
-                        items={workItems}
-                        filter="yesterday"
-                        getYesterdayOrLastFriday={getYesterdayOrLastFriday}
-                        getPreviousWorkday={getPreviousWorkday}
-                        getStatusColor={getStatusColor}
-                      />
-                    )}
+                    {isLoading ? <WorkItemsSkeleton /> : <WorkItems items={workItems} filter="yesterday" />}
                   </Box>
                   <Box>
                     <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
@@ -194,14 +167,7 @@ const AppContent = () => {
                     {isLoading ? (
                       <WorkItemsSkeleton />
                     ) : (
-                      <WorkItems
-                        items={workItems}
-                        filter="stale"
-                        getYesterdayOrLastFriday={getYesterdayOrLastFriday}
-                        getPreviousWorkday={getPreviousWorkday}
-                        getStatusColor={getStatusColor}
-                        emptyMessage="🎉 No stale items found"
-                      />
+                      <WorkItems items={workItems} filter="stale" emptyMessage="🎉 No stale items found" />
                     )}
                   </Box>
                 </VStack>

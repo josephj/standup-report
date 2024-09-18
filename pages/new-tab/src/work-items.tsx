@@ -1,4 +1,3 @@
-import React from 'react';
 import { List, ListItem, Flex, Box, Text, Link, Badge } from '@chakra-ui/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faJira, faGithub } from '@fortawesome/free-brands-svg-icons';
@@ -6,44 +5,65 @@ import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import { TimeIcon } from '@chakra-ui/icons';
 import { formatDistanceToNow } from 'date-fns';
 
+import { getYesterdayOrLastFriday, getStatusColor } from './lib';
+
 import type { WorkItem } from './lib';
 
-type WorkItemsProps = {
+type Props = {
   items: WorkItem[];
   filter: 'ongoing' | 'yesterday' | 'stale';
-  getYesterdayOrLastFriday: () => Date;
-  getPreviousWorkday: () => Date;
-  getStatusColor: (status: string) => string;
   emptyMessage?: string; // 新增這個可選屬性
 };
 
-const filterWorkItems = (
-  item: WorkItem,
-  filter: 'ongoing' | 'yesterday' | 'stale',
-  getYesterdayOrLastFriday: () => Date,
-  getPreviousWorkday: () => Date,
-) => {
+const filterWorkItems = (item: WorkItem, filter: 'ongoing' | 'yesterday' | 'stale') => {
   const itemDate = new Date(item.type === 'Calendar' ? item.start! : item.updatedAt);
   const yesterdayOrLastFriday = getYesterdayOrLastFriday();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const yesterdayOrLastFridayStart = new Date(yesterdayOrLastFriday);
+  yesterdayOrLastFridayStart.setHours(0, 0, 0, 0);
+  const yesterdayOrLastFridayEnd = new Date(yesterdayOrLastFriday);
+  yesterdayOrLastFridayEnd.setHours(23, 59, 59, 999);
+
+  const isToday = itemDate > yesterdayOrLastFridayEnd;
+  const isYesterdayOrLastFriday = itemDate >= yesterdayOrLastFridayStart && itemDate < todayStart;
 
   switch (filter) {
     case 'ongoing':
       if (item.type === 'Calendar') {
-        return itemDate >= today;
+        return isToday;
       }
-      return !item.isStale && itemDate > yesterdayOrLastFriday && item.status !== 'Merged';
+
+      if (item.type === 'GitHub') {
+        if (['Open', 'Draft'].includes(item?.status || '')) {
+          return isYesterdayOrLastFriday;
+        }
+        if (item.status === 'Merged' || item.status === 'Participated') {
+          return isToday;
+        }
+      }
+
+      return !item.isStale && isToday && item.status !== 'Merged';
     case 'yesterday':
-      if (item.type === 'Calendar') {
-        return itemDate >= yesterdayOrLastFriday && itemDate < today;
+      if (item.type === 'GitHub') {
+        if (item.status === 'Merged' || item.status === 'Participated') {
+          return isYesterdayOrLastFriday;
+        }
+        if (['Open', 'Draft'].includes(item?.status || '')) {
+          return false;
+        }
       }
-      if (item.type === 'GitHub' && item.status === 'Merged') {
-        const twoDaysAgo = new Date(today);
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        return itemDate >= twoDaysAgo && itemDate < today;
+
+      if (item.type === 'Jira') {
+        return (
+          !item.isStale &&
+          item.status !== 'In Progress' &&
+          itemDate >= yesterdayOrLastFridayStart &&
+          itemDate < todayStart
+        );
       }
-      return !item.isStale && itemDate <= yesterdayOrLastFriday && itemDate >= getPreviousWorkday();
+
+      return itemDate >= yesterdayOrLastFridayStart && itemDate < todayStart;
     case 'stale':
       if (item.type === 'GitHub' && !item.isAuthor && item.status === 'Participated') {
         return false;
@@ -52,17 +72,8 @@ const filterWorkItems = (
   }
 };
 
-export const WorkItems: React.FC<WorkItemsProps> = ({
-  items,
-  filter,
-  getYesterdayOrLastFriday,
-  getPreviousWorkday,
-  getStatusColor,
-  emptyMessage,
-}) => {
-  const filteredItems = items.filter(item =>
-    filterWorkItems(item, filter, getYesterdayOrLastFriday, getPreviousWorkday),
-  );
+export const WorkItems = ({ items, filter, emptyMessage }: Props) => {
+  const filteredItems = items.filter(item => filterWorkItems(item, filter));
 
   if (filteredItems.length === 0 && emptyMessage) {
     return (
