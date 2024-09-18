@@ -200,6 +200,7 @@ const AppContent = () => {
                         getYesterdayOrLastFriday={getYesterdayOrLastFriday}
                         getPreviousWorkday={getPreviousWorkday}
                         getStatusColor={getStatusColor}
+                        emptyMessage="🎉 No stale items found"
                       />
                     )}
                   </Box>

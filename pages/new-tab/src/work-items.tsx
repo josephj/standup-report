@@ -66,7 +66,7 @@ export const WorkItems: React.FC<WorkItemsProps> = ({
 
   if (filteredItems.length === 0 && emptyMessage) {
     return (
-      <Box p={4} borderWidth={1} borderRadius="md" borderColor="gray.200">
+      <Box py={2} borderWidth={1} borderRadius="md" borderColor="gray.200">
         <Text>{emptyMessage}</Text>
       </Box>
     );
