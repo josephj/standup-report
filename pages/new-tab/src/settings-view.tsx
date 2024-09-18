@@ -213,6 +213,11 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
         }
       });
     });
+
+    // 檢查 Google Calendar 的連接狀態
+    chrome.identity.getAuthToken({ interactive: false }, function (token) {
+      setGoogleCalendarConnected(!!token);
+    });
   }, []);
 
   const validateToken = useCallback(
@@ -312,11 +317,10 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
       console.log('Connection result:', success);
       setIsValidating(prev => ({ ...prev, [system.name]: false }));
       if (success) {
-        system.isConnected = true;
-        setTokenValidation(prev => ({ ...prev, [system.name]: true }));
         if (system.name === 'Google Calendar') {
           setGoogleCalendarConnected(true);
         }
+        setTokenValidation(prev => ({ ...prev, [system.name]: true }));
       } else {
         console.error('Failed to connect:', system.name);
       }
@@ -331,11 +335,10 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     const success = await system.disconnectFunction!();
     setIsValidating(prev => ({ ...prev, [system.name]: false }));
     if (success) {
-      system.isConnected = false;
-      setTokenValidation(prev => ({ ...prev, [system.name]: null }));
       if (system.name === 'Google Calendar') {
         setGoogleCalendarConnected(false);
       }
+      setTokenValidation(prev => ({ ...prev, [system.name]: null }));
     }
   };
 

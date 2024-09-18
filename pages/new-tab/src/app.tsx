@@ -1,9 +1,9 @@
 import { withErrorBoundary, withSuspense } from '@extension/shared';
-import { Box, VStack, Heading, useDisclosure, Flex, useBoolean } from '@chakra-ui/react';
+import { Box, VStack, Heading, useDisclosure, Flex, useBoolean, IconButton, Tooltip, HStack } from '@chakra-ui/react';
 import { t } from '@extension/i18n';
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-import { CenteredSpinner, ZeroState } from './elements';
+import { WorkItemsSkeleton, ZeroState } from './elements';
 import { SettingsView } from './settings-view';
 import { SummarySection } from './summary-section';
 import { WorkItems } from './work-items';
@@ -18,6 +18,8 @@ import {
 import type { WorkItem } from './lib';
 import { Header } from './header';
 import { fetchWithCache, fetchGitHubItems, fetchGcalItems, callOpenAI } from './lib/utils';
+import { faSyncAlt } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const AppContent = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -131,17 +133,35 @@ const AppContent = () => {
       <Box maxWidth="1400px" width="100%">
         {hasValidTokens ? (
           <VStack spacing={8} align="stretch">
-            <Header isLoading={isLoading} onForceRefresh={handleForceRefresh} onOpenSettings={onOpen} />
-            {isLoading ? (
-              <CenteredSpinner />
-            ) : (
-              <Flex direction={{ base: 'column', lg: 'row' }} gap={8}>
-                <Box flex="1">
-                  <VStack spacing={8} align="stretch">
-                    <Box>
-                      <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
-                        🔥 Ongoing
-                      </Heading>
+            <Header onOpenSettings={onOpen} />
+
+            <Flex direction={{ base: 'column', lg: 'row' }} gap={8}>
+              <Box flex="1">
+                <HStack mb={4}>
+                  <Heading size="md" color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
+                    🧳 Work Items
+                  </Heading>
+                  <Tooltip label="Force Refresh" hasArrow fontSize="x-small" aria-label="Force Refresh">
+                    <IconButton
+                      aria-label="Force Refresh"
+                      size="xs"
+                      icon={<FontAwesomeIcon icon={faSyncAlt} />}
+                      onClick={handleForceRefresh}
+                      variant="outline"
+                      colorScheme="blue"
+                      isLoading={isLoading}>
+                      Refresh
+                    </IconButton>
+                  </Tooltip>
+                </HStack>
+                <VStack spacing={8} align="stretch">
+                  <Box>
+                    <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
+                      🔥 Ongoing
+                    </Heading>
+                    {isLoading ? (
+                      <WorkItemsSkeleton />
+                    ) : (
                       <WorkItems
                         items={workItems}
                         filter="ongoing"
@@ -149,11 +169,15 @@ const AppContent = () => {
                         getPreviousWorkday={getPreviousWorkday}
                         getStatusColor={getStatusColor}
                       />
-                    </Box>
-                    <Box>
-                      <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
-                        {isMonday() ? '📅 Last Friday' : '⏰ Yesterday'}
-                      </Heading>
+                    )}
+                  </Box>
+                  <Box>
+                    <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
+                      {isMonday() ? '📅 Last Friday' : '⏰ Yesterday'}
+                    </Heading>
+                    {isLoading ? (
+                      <WorkItemsSkeleton />
+                    ) : (
                       <WorkItems
                         items={workItems}
                         filter="yesterday"
@@ -161,35 +185,38 @@ const AppContent = () => {
                         getPreviousWorkday={getPreviousWorkday}
                         getStatusColor={getStatusColor}
                       />
-                    </Box>
-                    <Box>
-                      <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
-                        ⏳ Stale Items
-                      </Heading>
+                    )}
+                  </Box>
+                  <Box>
+                    <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
+                      ⏳ Stale Items
+                    </Heading>
+                    {isLoading ? (
+                      <WorkItemsSkeleton />
+                    ) : (
                       <WorkItems
                         items={workItems}
                         filter="stale"
                         getYesterdayOrLastFriday={getYesterdayOrLastFriday}
                         getPreviousWorkday={getPreviousWorkday}
                         getStatusColor={getStatusColor}
-                        emptyMessage="Great job! No stale items. Keep up the good work!" // Add this line
                       />
-                    </Box>
-                  </VStack>
-                </Box>
-                <SummarySection
-                  hasOpenAIToken={hasOpenAIToken}
-                  aiGeneratedReport={aiGeneratedReport}
-                  isGeneratingReport={isGeneratingReport}
-                  isReportGenerated={isReportGenerated}
-                  cachedReport={cachedReport}
-                  onOpen={onOpen}
-                  onGenerateReport={handleGenerateReport}
-                  abortControllerRef={abortControllerRef}
-                  setIsGeneratingReport={setIsGeneratingReport}
-                />
-              </Flex>
-            )}
+                    )}
+                  </Box>
+                </VStack>
+              </Box>
+              <SummarySection
+                hasOpenAIToken={hasOpenAIToken}
+                aiGeneratedReport={aiGeneratedReport}
+                isGeneratingReport={isGeneratingReport}
+                isReportGenerated={isReportGenerated}
+                cachedReport={cachedReport}
+                onOpen={onOpen}
+                onGenerateReport={handleGenerateReport}
+                abortControllerRef={abortControllerRef}
+                setIsGeneratingReport={setIsGeneratingReport}
+              />
+            </Flex>
           </VStack>
         ) : (
           <ZeroState onOpenSettings={onOpen} />
