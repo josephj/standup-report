@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Heading, Flex, Text, Button } from '@chakra-ui/react';
+import { Box, Heading, Flex, Text, Button, IconButton, Tooltip, HStack } from '@chakra-ui/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faSyncAlt, faStar } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
@@ -31,9 +31,24 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
 }) => {
   return (
     <Box flex="1">
-      <Heading size="md" mb={4} color="gray.700" textShadow="1px 1px 0 rgba(255,255,255)">
-        📊 Summary
-      </Heading>
+      <HStack mb={4}>
+        <Heading size="md" color="gray.700" textShadow="1px 1px 0 rgba(255,255,255)">
+          📊 Summary
+        </Heading>
+        {hasOpenAIToken && (
+          <Tooltip label="Force Refresh" hasArrow fontSize="x-small" aria-label="Force Refresh">
+            <IconButton
+              aria-label="Generate New Report"
+              icon={<FontAwesomeIcon icon={faSyncAlt} />}
+              onClick={onGenerateReport}
+              isLoading={isGeneratingReport}
+              variant="outline"
+              colorScheme="blue"
+              size="xs"
+            />
+          </Tooltip>
+        )}
+      </HStack>
       <Box
         height="calc(100% - 40px)"
         overflowY="auto"
@@ -87,20 +102,9 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
           </>
         ) : cachedReport ? (
           <>
-            <HtmlContent sx={{ p: { _last: { mb: 0 } }, pb: '60px' }}>
+            <HtmlContent sx={{ p: { _last: { mb: 0 } } }}>
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{cachedReport}</ReactMarkdown>
             </HtmlContent>
-            <Flex position="absolute" bottom={4} right={4} gap={2}>
-              <Button
-                onClick={onGenerateReport}
-                isLoading={isGeneratingReport}
-                loadingText="Generating..."
-                colorScheme="purple"
-                size="sm"
-                leftIcon={<FontAwesomeIcon icon={faStar} color="white" />}>
-                Generate New Report
-              </Button>
-            </Flex>
           </>
         ) : (
           <Flex justifyContent="center" alignItems="flex-start" height="100%" py="32">
