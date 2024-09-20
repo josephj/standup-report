@@ -1,9 +1,5 @@
 import 'webextension-polyfill';
-import { exampleThemeStorage } from '@extension/storage';
 
-exampleThemeStorage.get().then(theme => {
-  console.log('theme', theme);
+chrome.action.onClicked.addListener(() => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('new-tab/index.html') });
 });
-
-console.log('background loaded');
-console.log("Edit 'chrome-extension/src/background/index.ts' and save to reload.");
