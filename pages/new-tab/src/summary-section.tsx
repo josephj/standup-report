@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Heading, Flex, Text, Button, IconButton, Tooltip, HStack, useDisclosure } from '@chakra-ui/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faSyncAlt, faStar, faBrain } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faSyncAlt, faStar, faMagicWandSparkles } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { HtmlContent } from './html-content';
@@ -70,7 +70,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
             <Tooltip label="Edit prompt" hasArrow fontSize="x-small" aria-label="Edit prompt">
               <IconButton
                 aria-label="Edit Prompt"
-                icon={<FontAwesomeIcon icon={faBrain} />}
+                icon={<FontAwesomeIcon icon={faMagicWandSparkles} />}
                 onClick={modalOnOpen}
                 variant="outline"
                 colorScheme="purple"

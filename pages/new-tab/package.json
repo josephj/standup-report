@@ -1,6 +1,6 @@
 {
   "name": "@extension/new-tab",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "chrome extension - new tab",
   "private": true,
   "sideEffects": true,
@@ -21,6 +21,7 @@
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/react": "^2.8.2",
+    "@ckeditor/ckeditor5-react": "^6.3.0",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@extension/i18n": "workspace:*",
@@ -34,6 +35,7 @@
     "@octokit/rest": "^21.0.2",
     "@uiw/react-md-editor": "^4.0.4",
     "axios": "^1.7.7",
+    "ckeditor5": "^43.1.0",
     "date-fns": "^2.30.0",
     "framer-motion": "^11.5.4",
     "langchain": "^0.2.18",

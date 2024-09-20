@@ -35,9 +35,11 @@
     }
   },
   "rules": {
+    "indent": "off",
     "react/react-in-jsx-scope": "off",
     "import/no-unresolved": "off",
-    "@typescript-eslint/consistent-type-imports": "error"
+    "@typescript-eslint/consistent-type-imports": "error",
+    "@typescript-eslint/indent": "off"
   },
   "globals": {
     "chrome": "readonly"

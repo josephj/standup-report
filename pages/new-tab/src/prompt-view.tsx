@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { ClassicEditor } from 'ckeditor5';
+import { useEffect, useRef, useState } from 'react';
 import {
   Button,
-  Textarea,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -9,7 +9,12 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
+  Box,
 } from '@chakra-ui/react';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+
+import { editorConfig } from './lib';
+import { HtmlContent } from './html-content';
 
 type Props = {
   initialPrompt: string;
@@ -20,6 +25,27 @@ type Props = {
 
 export const PromptView = ({ initialPrompt, isOpen, onClose, onSave }: Props) => {
   const [prompt, setPrompt] = useState<string>(initialPrompt);
+  console.log('prompt :', prompt);
+  const editorContainerRef = useRef(null);
+  const editorRef = useRef(null);
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+
+  useEffect(() => {
+    setIsLayoutReady(true);
+
+    return () => setIsLayoutReady(false);
+  }, []);
+
+  const config = {
+    ...editorConfig,
+    initialData: prompt,
+  };
+
+  const handleChange = (event: Event, editor: ClassicEditor) => {
+    const data = editor.getData();
+    setPrompt(data);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl">
       <ModalOverlay />
@@ -27,13 +53,17 @@ export const PromptView = ({ initialPrompt, isOpen, onClose, onSave }: Props) =>
         <ModalHeader>Edit custom prompt</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Textarea
-            fontSize="sm"
-            value={prompt}
-            onChange={e => setPrompt(e.target.value)}
-            rows={20}
-            placeholder="Enter your custom prompt here..."
-          />
+          <Box width="fit-content" mx="auto" fontFamily="Lato">
+            <Box ref={editorContainerRef}>
+              <HtmlContent
+                ref={editorRef}
+                sx={{ '.ck-editor__editable_inline': { height: '500px', overflowY: 'auto' } }}>
+                {isLayoutReady && (
+                  <CKEditor data={prompt} editor={ClassicEditor} config={config} onChange={handleChange} />
+                )}
+              </HtmlContent>
+            </Box>
+          </Box>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={onClose}>

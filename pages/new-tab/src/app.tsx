@@ -14,6 +14,9 @@ import { fetchWithCache, fetchGitHubItems, fetchGcalItems, callOpenAI } from './
 import { faSyncAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
+import 'ckeditor5/ckeditor5.css';
+import './app.css';
+
 const AppContent = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
