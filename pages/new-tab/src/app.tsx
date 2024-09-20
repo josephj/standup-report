@@ -7,7 +7,7 @@ import { WorkItemsSkeleton, ZeroState } from './elements';
 import { SettingsView } from './settings-view';
 import { SummarySection } from './summary-section';
 import { WorkItems } from './work-items';
-import { fetchJiraItems, isMonday, promptTemplate } from './lib';
+import { fetchJiraItems, isMonday, defaultPrompt } from './lib';
 import type { WorkItem } from './lib';
 import { Header } from './header';
 import { fetchWithCache, fetchGitHubItems, fetchGcalItems, callOpenAI } from './lib/utils';
@@ -20,7 +20,6 @@ const AppContent = () => {
   const [isLoading, setLoading] = useBoolean(true);
   const [aiGeneratedReport, setAiGeneratedReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [isReportGenerated, setIsReportGenerated] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [hasOpenAIToken, setHasOpenAIToken] = useState(false);
   const [hasValidTokens, setHasValidTokens] = useState(false);
@@ -73,15 +72,16 @@ const AppContent = () => {
   const handleGenerateReport = useCallback(async () => {
     setIsGeneratingReport(true);
     setAiGeneratedReport('');
-    setIsReportGenerated(false);
 
     const workItemsText = workItems
       .map(item => `${item.type}: ${item.title} (${item.status || 'No status'}) - Updated: ${item.updatedAt}`)
       .join('\n');
 
-    const fullPrompt = `${promptTemplate}\n\nWork items:\n${workItemsText}`;
+    const { customPrompt } = await chrome.storage.sync.get(['customPrompt']);
 
-    await callOpenAI(fullPrompt, {
+    const prompt = `${customPrompt || defaultPrompt}\n\nCurrent date and time: ${new Date()}\n\nWork items:\n${workItemsText}`;
+
+    await callOpenAI(prompt, {
       onAbort: () => {
         console.log('Fetch aborted');
       },
@@ -93,7 +93,6 @@ const AppContent = () => {
         setAiGeneratedReport(response);
       },
       onComplete: fullResponse => {
-        setIsReportGenerated(true);
         chrome.storage.local.set({ cachedReport: fullResponse });
         setCachedReport(fullResponse);
       },
@@ -176,7 +175,6 @@ const AppContent = () => {
                 hasOpenAIToken={hasOpenAIToken}
                 aiGeneratedReport={aiGeneratedReport}
                 isGeneratingReport={isGeneratingReport}
-                isReportGenerated={isReportGenerated}
                 cachedReport={cachedReport}
                 onOpen={onOpen}
                 onGenerateReport={handleGenerateReport}

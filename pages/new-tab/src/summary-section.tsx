@@ -1,16 +1,17 @@
-import React from 'react';
-import { Box, Heading, Flex, Text, Button, IconButton, Tooltip, HStack } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Box, Heading, Flex, Text, Button, IconButton, Tooltip, HStack, useDisclosure } from '@chakra-ui/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faSyncAlt, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faSyncAlt, faStar, faBrain } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { HtmlContent } from './html-content';
+import { defaultPrompt } from './lib';
+import { PromptView } from './prompt-view';
 
 interface SummarySectionProps {
   hasOpenAIToken: boolean;
   aiGeneratedReport: string;
   isGeneratingReport: boolean;
-  isReportGenerated: boolean;
   cachedReport: string | null;
   onOpen: () => void;
   onGenerateReport: () => void;
@@ -22,13 +23,31 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
   hasOpenAIToken,
   aiGeneratedReport,
   isGeneratingReport,
-  isReportGenerated,
   cachedReport,
   onOpen,
   onGenerateReport,
   abortControllerRef,
   setIsGeneratingReport,
 }) => {
+  const { isOpen, onOpen: modalOnOpen, onClose } = useDisclosure();
+  const [customPrompt, setCustomPrompt] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Load custom prompt from Chrome storage
+    chrome.storage.sync.get(['customPrompt'], result => {
+      if (result.customPrompt) {
+        setCustomPrompt(result.customPrompt);
+      }
+    });
+  }, []);
+
+  const handleSavePrompt = async (newPrompt: string) => {
+    setCustomPrompt(newPrompt);
+    await chrome.storage.sync.set({ customPrompt: newPrompt });
+    onClose();
+    onGenerateReport();
+  };
+
   return (
     <Box flex="1">
       <HStack mb={4}>
@@ -36,17 +55,29 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
           📊 Summary
         </Heading>
         {hasOpenAIToken && (
-          <Tooltip label="Force Refresh" hasArrow fontSize="x-small" aria-label="Force Refresh">
-            <IconButton
-              aria-label="Generate New Report"
-              icon={<FontAwesomeIcon icon={faSyncAlt} />}
-              onClick={onGenerateReport}
-              isLoading={isGeneratingReport}
-              variant="outline"
-              colorScheme="blue"
-              size="xs"
-            />
-          </Tooltip>
+          <>
+            <Tooltip label="Force refresh" hasArrow fontSize="x-small" aria-label="Force refresh">
+              <IconButton
+                aria-label="Generate new report"
+                icon={<FontAwesomeIcon icon={faSyncAlt} />}
+                onClick={onGenerateReport}
+                isLoading={isGeneratingReport}
+                variant="outline"
+                colorScheme="blue"
+                size="xs"
+              />
+            </Tooltip>
+            <Tooltip label="Edit prompt" hasArrow fontSize="x-small" aria-label="Edit prompt">
+              <IconButton
+                aria-label="Edit Prompt"
+                icon={<FontAwesomeIcon icon={faBrain} />}
+                onClick={modalOnOpen}
+                variant="outline"
+                colorScheme="purple"
+                size="xs"
+              />
+            </Tooltip>
+          </>
         )}
       </HStack>
       <Box
@@ -87,17 +118,6 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                   🛑 Stop
                 </Button>
               )}
-              {isReportGenerated && (
-                <Button
-                  onClick={onGenerateReport}
-                  isLoading={isGeneratingReport}
-                  loadingText="Regenerating..."
-                  colorScheme="purple"
-                  size="sm"
-                  leftIcon={<FontAwesomeIcon icon={faSyncAlt} color="#6B46C1" />}>
-                  Regenerate Report
-                </Button>
-              )}
             </Flex>
           </>
         ) : cachedReport ? (
@@ -121,6 +141,14 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
           </Flex>
         )}
       </Box>
+      {isOpen ? (
+        <PromptView
+          isOpen={isOpen}
+          onClose={onClose}
+          onSave={handleSavePrompt}
+          initialPrompt={customPrompt || defaultPrompt}
+        />
+      ) : null}
     </Box>
   );
 };
