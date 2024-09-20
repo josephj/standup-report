@@ -83,19 +83,19 @@ export const HtmlContent = defineStyleConfig({
       paddingLeft: 'medium',
     },
     table: {
-      border: "solid 1px #eee",
+      border: 'solid 1px #eee',
       minWidth: '500px',
       tableLayout: 'fixed',
       borderCollapse: 'collapse',
       marginY: 'medium',
     },
-    'th': {
+    th: {
       background: '#eee',
     },
     'td, th': {
-      border: "solid 1px #ccc",
+      border: 'solid 1px #ccc',
       fontSize: '12px',
-      padding: '4px'
-    }
+      padding: '4px',
+    },
   },
 });

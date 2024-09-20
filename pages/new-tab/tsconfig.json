@@ -3,18 +3,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@src/*": [
-        "src/*"
-      ],
-    "@chakra-ui/icons": ["../../node_modules/@chakra-ui/icons"]
+      "@src/*": ["src/*"],
+      "@chakra-ui/icons": ["../../node_modules/@chakra-ui/icons"]
     },
-    "types": [
-      "chrome",
-      "../../vite-env.d.ts"
-    ]
+    "types": ["chrome", "../../vite-env.d.ts"]
   },
-  "include": [
-    "src",
-    "ckeditor5/ckeditor5.d.ts"
-  ]
+  "include": ["src", "ckeditor5/ckeditor5.d.ts"]
 }
