@@ -12,7 +12,7 @@ export const Header = ({ onOpenSettings }: Props) => {
       <HStack>
         <Image src={chrome.runtime.getURL('icon-128.png')} alt="Logo" boxSize="48px" />
         <Heading as="h1" size="lg">
-          Stand-up Report
+          Stand-up report
         </Heading>
       </HStack>
       <Flex>

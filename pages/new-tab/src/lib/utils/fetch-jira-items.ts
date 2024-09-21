@@ -11,6 +11,7 @@ export const fetchJiraItems = async (): Promise<WorkItem[]> => {
   }
 
   const inProgressStatuses = ['In Progress', 'In Review'];
+  const closedStatuses = ['Closed', 'Done', 'Resolved'];
   const twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
@@ -36,7 +37,7 @@ export const fetchJiraItems = async (): Promise<WorkItem[]> => {
         'Content-Type': 'application/json',
       },
       params: {
-        jql: `assignee = currentUser() AND status = Closed AND updated >= "${twoDaysAgo.toISOString().split('T')[0]}" ORDER BY updated DESC`,
+        jql: `assignee = currentUser() AND status IN (${closedStatuses.map(status => `"${status}"`).join(', ')})AND updated >= "${twoDaysAgo.toISOString().split('T')[0]}" ORDER BY updated DESC`,
         fields: 'id,key,summary,status,updated,assignee',
       },
     });
