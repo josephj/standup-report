@@ -26,12 +26,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub, faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
 import { faRobot, faCog } from '@fortawesome/free-solid-svg-icons';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import CreatableSelect from 'react-select/creatable';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
 };
+
+type JiraStatus = { value: string; label: string };
 
 interface SystemConfig {
   name: string;
@@ -43,6 +46,10 @@ interface SystemConfig {
   icon: IconDefinition;
   useOAuth?: boolean;
   isConnected?: boolean;
+  jiraStatuses?: {
+    inProgress: JiraStatus[];
+    closed: JiraStatus[];
+  };
 }
 
 const systems: SystemConfig[] = [
@@ -85,6 +92,21 @@ const systems: SystemConfig[] = [
     tokenGuideUrl: 'https://id.atlassian.com/manage-profile/security/api-tokens',
     requiresUrl: true,
     icon: faJira,
+    jiraStatuses: {
+      inProgress: [
+        { value: 'Pending', label: 'Pending' },
+        { value: 'In Progress', label: 'In Progress' },
+        { value: 'In Review', label: 'In Review' },
+        { value: 'In Development', label: 'In Development' },
+        { value: 'Code Review', label: 'Code Review' },
+        { value: 'Testing', label: 'Testing' },
+      ],
+      closed: [
+        { value: 'Closed', label: 'Closed' },
+        { value: 'Done', label: 'Done' },
+        { value: 'Resolved', label: 'Resolved' },
+      ],
+    },
   },
   {
     name: 'OpenAI',
@@ -188,6 +210,64 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
   const [initialUrls, setInitialUrls] = useState<Record<string, string>>({});
   const toast = useToast();
   const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
+  const [jiraInProgressStatuses, setJiraInProgressStatuses] = useState<JiraStatus[]>([]);
+  const [jiraClosedStatuses, setJiraClosedStatuses] = useState<JiraStatus[]>([]);
+  const [jiraStatuses, setJiraStatuses] = useState<JiraStatus[]>([]);
+
+  const fetchJiraStatuses = useCallback(async (token: string, url: string) => {
+    if (!token || !url) return;
+
+    const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+    try {
+      const projectsResponse = await fetch(`${fullUrl}/rest/api/3/project/search?maxResults=100`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (!projectsResponse.ok) {
+        console.error('Failed to fetch Jira projects');
+        return;
+      }
+
+      const projects = await projectsResponse.json();
+      const activeProjectIds = projects.values
+        .filter((project: any) => project.isPrivate !== true && project.archived !== true)
+        .map((project: any) => project.id);
+
+      // Fetch statuses for active projects
+      const statusesResponse = await fetch(`${fullUrl}/rest/api/3/status`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (!statusesResponse.ok) {
+        console.error('Failed to fetch Jira statuses');
+        return;
+      }
+
+      const allStatuses = await statusesResponse.json();
+
+      const activeStatuses = allStatuses.filter(
+        (status: any) => status.scope && status.scope.project && activeProjectIds.includes(status.scope.project.id),
+      );
+
+      const formattedStatuses = Array.from(new Set(activeStatuses.map((status: any) => status.name))).map(name => ({
+        value: name,
+        label: name,
+      }));
+
+      setJiraStatuses(formattedStatuses);
+
+      // Save fetched statuses to storage
+      chrome.storage.local.set({ jiraStatuses: formattedStatuses });
+    } catch (error) {
+      console.error('Error fetching Jira statuses:', error);
+    }
+  }, []);
 
   useEffect(() => {
     systems.forEach(system => {
@@ -218,7 +298,37 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     chrome.identity.getAuthToken({ interactive: false }, function (token) {
       setGoogleCalendarConnected(!!token);
     });
-  }, []);
+
+    // Load Jira statuses from storage or fetch if not available
+    chrome.storage.local.get(['jiraStatuses', 'jiraToken', 'jiraUrl'], result => {
+      if (result.jiraStatuses) {
+        setJiraStatuses(result.jiraStatuses);
+      } else if (result.jiraToken && result.jiraUrl) {
+        fetchJiraStatuses(result.jiraToken, result.jiraUrl);
+      }
+    });
+
+    // Load Jira statuses from storage or set defaults
+    chrome.storage.local.get(['jiraInProgressStatuses', 'jiraClosedStatuses'], result => {
+      if (result.jiraInProgressStatuses) {
+        setJiraInProgressStatuses(result.jiraInProgressStatuses);
+      } else {
+        const defaultInProgressStatuses =
+          systems
+            .find(s => s.name === 'Jira')
+            ?.jiraStatuses?.inProgress.filter(
+              status => status.value === 'In Review' || status.value === 'In Development',
+            ) || [];
+        setJiraInProgressStatuses(defaultInProgressStatuses);
+      }
+      if (result.jiraClosedStatuses) {
+        setJiraClosedStatuses(result.jiraClosedStatuses);
+      } else {
+        const defaultClosedStatuses = systems.find(s => s.name === 'Jira')?.jiraStatuses?.closed || [];
+        setJiraClosedStatuses(defaultClosedStatuses);
+      }
+    });
+  }, [fetchJiraStatuses]);
 
   const validateToken = useCallback(
     debounce(async (system: SystemConfig, token: string, url?: string) => {
@@ -297,6 +407,12 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
           newConnectedSystems.push(system.name);
         }
       }
+    });
+
+    // Save Jira statuses
+    chrome.storage.local.set({
+      jiraInProgressStatuses,
+      jiraClosedStatuses,
     });
 
     onSave();
@@ -413,6 +529,32 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
                     {system.useOAuth ? 'Learn more' : `Get ${system.name} token`} <ExternalLinkIcon mx="2px" />
                   </Link>
                 </Text>
+
+                {system.name === 'Jira' && (
+                  <>
+                    <FormLabel mt={4} fontSize="small">
+                      Jira In Progress Statuses
+                    </FormLabel>
+                    <CreatableSelect
+                      isMulti
+                      options={jiraStatuses}
+                      value={jiraInProgressStatuses}
+                      onChange={selected => setJiraInProgressStatuses(selected as JiraStatus[])}
+                      placeholder="Add or select statuses..."
+                    />
+
+                    <FormLabel mt={4} fontSize="small">
+                      Jira Closed Statuses
+                    </FormLabel>
+                    <CreatableSelect
+                      isMulti
+                      options={jiraStatuses}
+                      value={jiraClosedStatuses}
+                      onChange={selected => setJiraClosedStatuses(selected as JiraStatus[])}
+                      placeholder="Add or select statuses..."
+                    />
+                  </>
+                )}
               </FormControl>
             ))}
             <Button onClick={handleSave} colorScheme="blue">

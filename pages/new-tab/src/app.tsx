@@ -1,5 +1,16 @@
 import { withErrorBoundary, withSuspense } from '@extension/shared';
-import { Box, VStack, Heading, useDisclosure, Flex, useBoolean, IconButton, Tooltip, HStack } from '@chakra-ui/react';
+import {
+  Box,
+  VStack,
+  Heading,
+  useDisclosure,
+  Flex,
+  useBoolean,
+  IconButton,
+  Tooltip,
+  HStack,
+  useToast,
+} from '@chakra-ui/react';
 import { t } from '@extension/i18n';
 import { useState, useCallback, useEffect, useRef } from 'react';
 
@@ -27,6 +38,7 @@ const AppContent = () => {
   const [hasOpenAIToken, setHasOpenAIToken] = useState(false);
   const [hasValidTokens, setHasValidTokens] = useState(false);
   const [cachedReport, setCachedReport] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     const checkTokens = async () => {
@@ -63,10 +75,17 @@ const AppContent = () => {
       setWorkItems([...jiraItems, ...githubItems, ...gcalItems]);
     } catch (error) {
       console.error('Error fetching work items:', error);
+      toast({
+        title: 'Error fetching work items',
+        description: 'An error occurred while fetching your work items. Please try again later.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading.off();
     }
-  }, [setLoading]);
+  }, [setLoading, toast]);
 
   useEffect(() => {
     fetchWorkItems();

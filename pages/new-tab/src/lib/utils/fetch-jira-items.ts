@@ -2,16 +2,30 @@ import axios from 'axios';
 import type { JiraIssue, WorkItem } from '../types';
 import { getPreviousWorkday } from './date';
 
+type JiraStatus = { value: string; label: string };
+
 export const fetchJiraItems = async (): Promise<WorkItem[]> => {
-  const { jiraUrl, jiraToken } = await chrome.storage.local.get(['jiraUrl', 'jiraToken']);
+  const { jiraUrl, jiraToken, jiraInProgressStatuses, jiraClosedStatuses } = await chrome.storage.local.get([
+    'jiraUrl',
+    'jiraToken',
+    'jiraInProgressStatuses',
+    'jiraClosedStatuses',
+  ]);
 
   if (!jiraUrl || !jiraToken) {
     console.log('Jira URL or token not found in local storage');
     return [];
   }
 
-  const inProgressStatuses = ['In Progress', 'In Review'];
-  const closedStatuses = ['Closed', 'Done', 'Resolved'];
+  const inProgressStatuses = jiraInProgressStatuses?.map((status: JiraStatus) => status.value) || [
+    'In Review',
+    'In Development',
+  ];
+  const closedStatuses = jiraClosedStatuses?.map((status: JiraStatus) => status.value) || [
+    'Done',
+    'Closed',
+    'Resolved',
+  ];
   const twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
