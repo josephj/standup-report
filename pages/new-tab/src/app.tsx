@@ -41,12 +41,21 @@ const AppContent = () => {
   const toast = useToast();
 
   const checkTokens = useCallback(async () => {
-    const { jiraToken, githubToken, googleCalendarToken } = await chrome.storage.local.get([
+    const { jiraToken, githubToken, googleCalendarToken, openaiToken } = await chrome.storage.local.get([
       'jiraToken',
       'githubToken',
       'googleCalendarToken',
+      'openaiToken',
     ]);
     setHasValidTokens(Boolean(jiraToken || githubToken || googleCalendarToken));
+    setHasOpenAIToken(Boolean(openaiToken));
+  }, []);
+
+  const checkOpenAIToken = useCallback(async () => {
+    const { openaiToken } = await chrome.storage.local.get('openaiToken');
+    const result = Boolean(openaiToken);
+    setHasOpenAIToken(result);
+    return result;
   }, []);
 
   useEffect(() => {
@@ -122,19 +131,16 @@ const AppContent = () => {
 
   const handleSaveSetting = useCallback(async () => {
     await checkTokens();
-    const checkOpenAIToken = async () => {
-      const { openaiToken } = await chrome.storage.local.get('openaiToken');
-      setHasOpenAIToken(Boolean(openaiToken));
-    };
-    await checkOpenAIToken();
 
     await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_gcal']);
     await fetchWorkItems();
 
-    if (hasOpenAIToken) {
+    const result = await checkOpenAIToken();
+    if (result) {
+      await chrome.storage.local.remove(['cachedReport']);
       handleGenerateReport();
     }
-  }, [checkTokens, fetchWorkItems, hasOpenAIToken, handleGenerateReport]);
+  }, [checkTokens, fetchWorkItems, checkOpenAIToken, handleGenerateReport]);
 
   const handleForceRefresh = useCallback(async () => {
     setLoading.on();
