@@ -42,8 +42,12 @@ const AppContent = () => {
 
   useEffect(() => {
     const checkTokens = async () => {
-      const { jiraToken, githubToken } = await chrome.storage.local.get(['jiraToken', 'githubToken']);
-      setHasValidTokens(Boolean(jiraToken && githubToken));
+      const { jiraToken, githubToken, googleCalendarToken } = await chrome.storage.local.get([
+        'jiraToken',
+        'githubToken',
+        'googleCalendarToken',
+      ]);
+      setHasValidTokens(Boolean(jiraToken || githubToken || googleCalendarToken));
     };
     checkTokens();
   }, []);
