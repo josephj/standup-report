@@ -71,31 +71,27 @@ const AppContent = () => {
     });
   }, []);
 
-  const fetchWorkItems = useCallback(
-    async (isForceRefresh: boolean = false) => {
-      setLoading.on();
-      setWorkItems([]);
-      try {
-        const jiraItems = await fetchWithCache<WorkItem[]>('jira', fetchJiraItems, isForceRefresh);
-        const githubItems = await fetchWithCache<WorkItem[]>('github', fetchGitHubItems, isForceRefresh);
-        const gcalItems = await fetchWithCache<WorkItem[]>('gcal', fetchGcalItems, isForceRefresh);
-
-        setWorkItems([...jiraItems, ...githubItems, ...gcalItems]);
-      } catch (error) {
-        console.error('Error fetching work items:', error);
-        toast({
-          title: 'Error fetching work items',
-          description: 'An error occurred while fetching your work items. Please try again later.',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        setLoading.off();
-      }
-    },
-    [setLoading, toast]
-  );
+  const fetchWorkItems = useCallback(async () => {
+    setLoading.on();
+    setWorkItems([]);
+    try {
+      const jiraItems = await fetchWithCache<WorkItem[]>('jira', fetchJiraItems);
+      const githubItems = await fetchWithCache<WorkItem[]>('github', fetchGitHubItems);
+      const gcalItems = await fetchWithCache<WorkItem[]>('gcal', fetchGcalItems);
+      setWorkItems([...jiraItems, ...githubItems, ...gcalItems]);
+    } catch (error) {
+      console.error('Error fetching work items:', error);
+      toast({
+        title: 'Error fetching work items',
+        description: 'An error occurred while fetching your work items. Please try again later.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading.off();
+    }
+  }, [setLoading, toast]);
 
   useEffect(() => {
     fetchWorkItems();
@@ -147,16 +143,14 @@ const AppContent = () => {
   }, [checkTokens, fetchWorkItems, checkOpenAIToken, handleGenerateReport]);
 
   const handleForceRefresh = useCallback(async () => {
-    await fetchWorkItems(true);
-    toast.closeAll();
-    toast({
-      title: 'Data Refreshed',
-      description: 'Your work items have been updated.',
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
-  }, [fetchWorkItems, toast]);
+    setLoading.on();
+    try {
+      await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_gcal']);
+      await fetchWorkItems();
+    } finally {
+      setLoading.off();
+    }
+  }, [fetchWorkItems, setLoading]);
 
   return (
     <Flex minHeight="100vh" p={8} justifyContent="center">
@@ -231,4 +225,4 @@ const AppContent = () => {
   );
 };
 
-export const App = withErrorBoundary(withSuspense(AppContent, <div>{t('loading')}</div>), <div>Error Occurred</div>));
+export const App = withErrorBoundary(withSuspense(AppContent, <div>{t('loading')}</div>), <div>Error Occurred</div>);

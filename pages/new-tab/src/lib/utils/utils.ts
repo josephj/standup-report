@@ -16,15 +16,11 @@ export const getStatusColor = (status: string): string => {
   }
 };
 
-export async function fetchWithCache<T>(
-  url: string,
-  fetchFunction: () => Promise<T>,
-  isForceRefresh: boolean = false,
-): Promise<T> {
+export async function fetchWithCache<T>(url: string, fetchFunction: () => Promise<T>): Promise<T> {
   const cacheKey = `cache_${url}`;
   const cachedData = await chrome.storage.local.get(cacheKey);
 
-  if (!isForceRefresh && cachedData[cacheKey] && Date.now() - cachedData[cacheKey].timestamp < CACHE_DURATION) {
+  if (cachedData[cacheKey] && Date.now() - cachedData[cacheKey].timestamp < CACHE_DURATION) {
     return cachedData[cacheKey].data;
   } else {
     const freshData = await fetchFunction();
