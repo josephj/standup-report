@@ -70,6 +70,7 @@ const systems: SystemConfig[] = [
     },
     tokenGuideUrl: 'https://github.com/settings/tokens/new?scopes=repo,user&description=StandupReportExtension',
     icon: faGithub,
+    placeholder: 'ghp_...',
   },
   {
     name: 'Jira',

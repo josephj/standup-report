@@ -40,25 +40,18 @@ const AppContent = () => {
   const [cachedReport, setCachedReport] = useState<string | null>(null);
   const toast = useToast();
 
-  useEffect(() => {
-    const checkTokens = async () => {
-      const { jiraToken, githubToken, googleCalendarToken } = await chrome.storage.local.get([
-        'jiraToken',
-        'githubToken',
-        'googleCalendarToken',
-      ]);
-      setHasValidTokens(Boolean(jiraToken || githubToken || googleCalendarToken));
-    };
-    checkTokens();
+  const checkTokens = useCallback(async () => {
+    const { jiraToken, githubToken, googleCalendarToken } = await chrome.storage.local.get([
+      'jiraToken',
+      'githubToken',
+      'googleCalendarToken',
+    ]);
+    setHasValidTokens(Boolean(jiraToken || githubToken || googleCalendarToken));
   }, []);
 
   useEffect(() => {
-    const checkOpenAIToken = async () => {
-      const { openaiToken } = await chrome.storage.local.get('openaiToken');
-      setHasOpenAIToken(Boolean(openaiToken));
-    };
-    checkOpenAIToken();
-  }, []);
+    checkTokens();
+  }, [checkTokens]);
 
   useEffect(() => {
     // Load cached report from chrome.storage.local when component mounts
@@ -127,14 +120,21 @@ const AppContent = () => {
     setIsGeneratingReport(false);
   }, [workItems]);
 
-  const handleSaveSetting = useCallback(() => {
-    fetchWorkItems();
+  const handleSaveSetting = useCallback(async () => {
+    await checkTokens();
     const checkOpenAIToken = async () => {
       const { openaiToken } = await chrome.storage.local.get('openaiToken');
       setHasOpenAIToken(Boolean(openaiToken));
     };
-    checkOpenAIToken();
-  }, [fetchWorkItems]);
+    await checkOpenAIToken();
+
+    await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_gcal']);
+    await fetchWorkItems();
+
+    if (hasOpenAIToken) {
+      handleGenerateReport();
+    }
+  }, [checkTokens, fetchWorkItems, hasOpenAIToken, handleGenerateReport]);
 
   const handleForceRefresh = useCallback(async () => {
     setLoading.on();
