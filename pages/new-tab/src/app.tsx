@@ -135,7 +135,7 @@ const AppContent = () => {
     });
 
     setIsGeneratingReport(false);
-  }, [workItems, groupedItems]);
+  }, [groupedItems]);
 
   const handleSaveSetting = useCallback(async () => {
     await checkTokens();

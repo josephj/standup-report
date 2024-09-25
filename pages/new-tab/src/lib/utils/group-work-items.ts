@@ -22,24 +22,11 @@ export const groupWorkItems = (items: WorkItem[]): GroupedWorkItems => {
       const isToday = itemDate > yesterdayOrLastFridayEnd;
       const isYesterdayOrLastFriday = itemDate >= yesterdayOrLastFridayStart && itemDate < todayStart;
 
-      if (item.isStale && !(item.type === 'GitHub' && !item.isAuthor && item.status === 'Participated')) {
+      if (isStaleItem(item)) {
         acc.stale.push(item);
-      } else if (
-        (item.type === 'Calendar' && isToday) ||
-        (item.type === 'GitHub' &&
-          ((['Open', 'Draft'].includes(item.status || '') && isYesterdayOrLastFriday) ||
-            (['Merged', 'Participated'].includes(item.status || '') && isToday))) ||
-        (item.type === 'Jira' && ['Open', 'In Progress'].includes(item.status || '') && isYesterdayOrLastFriday) ||
-        (isToday && item.status !== 'Merged')
-      ) {
+      } else if (isOngoingItem(item, isToday)) {
         acc.ongoing.push(item);
-      } else if (
-        (item.type === 'GitHub' &&
-          ((['Merged', 'Participated'].includes(item.status || '') && isYesterdayOrLastFriday) ||
-            !['Open', 'Draft'].includes(item.status || ''))) ||
-        (item.type === 'Jira' && !item.isStale && item.status !== 'In Progress' && isYesterdayOrLastFriday) ||
-        isYesterdayOrLastFriday
-      ) {
+      } else if (isYesterdayItem(item, isYesterdayOrLastFriday)) {
         acc.yesterday.push(item);
       }
 
@@ -48,3 +35,35 @@ export const groupWorkItems = (items: WorkItem[]): GroupedWorkItems => {
     { ongoing: [], yesterday: [], stale: [] },
   );
 };
+
+function isStaleItem(item: WorkItem): boolean {
+  return item.isStale && !(item.type === 'GitHub' && item.status === 'Participated');
+}
+
+function isOngoingItem(item: WorkItem, isToday: boolean): boolean {
+  const status = item.status || '';
+  switch (item.type) {
+    case 'Calendar':
+      return isToday;
+    case 'GitHub':
+      return ['Open', 'Draft'].includes(status) || (['Merged', 'Participated'].includes(status) && isToday);
+    case 'Jira':
+      return ['Open', 'In Progress'].includes(status);
+    default:
+      return isToday && status !== 'Merged';
+  }
+}
+
+function isYesterdayItem(item: WorkItem, isYesterdayOrLastFriday: boolean): boolean {
+  switch (item.type) {
+    case 'GitHub':
+      return (
+        (['Merged', 'Participated'].includes(item.status || '') && isYesterdayOrLastFriday) ||
+        !['Open', 'Draft'].includes(item.status || '')
+      );
+    case 'Jira':
+      return !item.isStale && item.status !== 'In Progress' && isYesterdayOrLastFriday;
+    default:
+      return isYesterdayOrLastFriday;
+  }
+}
