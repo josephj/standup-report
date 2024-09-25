@@ -33,11 +33,10 @@ export async function fetchGcalItems(): Promise<WorkItem[]> {
 
     if (!response.ok) {
       if (response.status === 401) {
-        // 令牌可能已過期，嘗試移除它並重新獲取
         await new Promise<void>(resolve => {
           chrome.identity.removeCachedAuthToken({ token }, () => resolve());
         });
-        return fetchGcalItems(); // 遞歸調用以重試
+        return fetchGcalItems();
       }
       throw new Error('Failed to fetch calendar events');
     }

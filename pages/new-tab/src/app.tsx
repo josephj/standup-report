@@ -40,7 +40,17 @@ const AppContent = () => {
   const [cachedReport, setCachedReport] = useState<string | null>(null);
   const toast = useToast();
 
-  const groupedItems = useMemo(() => groupWorkItems(workItems), [workItems]);
+  const [ongoingStatuses, setOngoingStatuses] = useState(['In Progress']);
+
+  useEffect(() => {
+    chrome.storage.local.get('jiraInProgressStatuses', result => {
+      setOngoingStatuses(
+        result.jiraInProgressStatuses.map((status: { value: string }) => status.value) || ['In Progress'],
+      );
+    });
+  }, []);
+
+  const groupedItems = useMemo(() => groupWorkItems(workItems, ongoingStatuses), [workItems, ongoingStatuses]);
 
   const checkTokens = useCallback(async () => {
     const { jiraToken, githubToken, googleCalendarToken, openaiToken } = await chrome.storage.local.get([
