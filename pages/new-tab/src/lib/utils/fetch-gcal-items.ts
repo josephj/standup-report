@@ -1,5 +1,6 @@
 import type { WorkItem, CalendarEvent } from '../types';
 import { getPreviousWorkday } from './date';
+import { format, startOfDay, endOfDay } from 'date-fns';
 
 async function getAuthToken(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -19,8 +20,15 @@ export async function fetchGcalItems(): Promise<WorkItem[]> {
 
     const now = new Date();
     const previousWorkday = getPreviousWorkday();
-    const timeMin = previousWorkday.toISOString();
-    const timeMax = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+    const timeMin = startOfDay(previousWorkday).toISOString();
+    const timeMax = endOfDay(now).toISOString();
+
+    const { gcalExcludeKeywords = ['stand-up', 'standup', 'lunch', 'home'] } = await new Promise<{
+      gcalExcludeKeywords?: string[];
+    }>(resolve => {
+      chrome.storage.local.get('gcalExcludeKeywords', result => resolve(result));
+    });
+    console.log('gcalExcludeKeywords :', gcalExcludeKeywords);
 
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
@@ -49,9 +57,10 @@ export async function fetchGcalItems(): Promise<WorkItem[]> {
         const attendees = event.attendees || [];
         const userAttendee = attendees.find(a => a.self);
         const isAttending = !userAttendee || userAttendee.responseStatus !== 'declined';
-        const ignoredTitles = ['Lunch', 'Home'];
-        const isIgnoredTitle = ignoredTitles.some(title => event.summary.toLowerCase().includes(title.toLowerCase()));
-        return isAttending && !isIgnoredTitle;
+        const isExcluded = gcalExcludeKeywords.some(keyword =>
+          event.summary.toLowerCase().includes(keyword.toLowerCase()),
+        );
+        return isAttending && !isExcluded;
       })
       .map((event: CalendarEvent) => ({
         type: 'Calendar' as const,
