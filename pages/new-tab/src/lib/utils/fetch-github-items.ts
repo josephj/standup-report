@@ -1,14 +1,13 @@
 import type { WorkItem } from '../types';
 import { Octokit } from '@octokit/rest';
 import { getPreviousWorkday } from './date';
+import { format, formatISO } from 'date-fns';
 
 export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
-  console.log('fetchGitHubItems');
   const { githubToken } = await chrome.storage.local.get('githubToken');
 
   if (!githubToken) {
-    console.log('GitHub token not found in local storage');
-    return [];
+    throw new Error('GitHub token not found in local storage');
   }
 
   const octokit = new Octokit({ auth: githubToken });
@@ -22,25 +21,55 @@ export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
       q: `is:open is:pr author:${username}`,
       sort: 'updated',
       order: 'desc',
-      per_page: 100,
+      per_page: 20,
+    });
+
+    const mergedPRs = await octokit.search.issuesAndPullRequests({
+      q: `is:pr is:merged author:${username} merged:>=${format(previousWorkday, 'yyyy-MM-dd')}`,
+      sort: 'updated',
+      order: 'desc',
+      per_page: 20,
     });
 
     const participatedPRs = await octokit.search.issuesAndPullRequests({
-      q: `is:pr -author:${username} commenter:${username}`,
+      q: `is:pr -author:${username} commenter:${username} updated:>=${format(previousWorkday, 'yyyy-MM-dd')}`,
       sort: 'updated',
       order: 'desc',
-      per_page: 100,
+      per_page: 20,
     });
 
-    const twoDaysAgo = new Date();
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const participatedPRsWithComments = await Promise.all(
+      participatedPRs.data.items.map(async item => {
+        const [owner, repo] = item.repository_url.split('/').slice(-2);
+        const [issueComments, reviewComments] = await Promise.all([
+          octokit.issues.listComments({
+            owner,
+            repo,
+            issue_number: item.number,
+          }),
+          octokit.pulls.listReviewComments({
+            owner,
+            repo,
+            pull_number: item.number,
+          }),
+        ]);
 
-    const mergedPRs = await octokit.search.issuesAndPullRequests({
-      q: `is:pr is:merged author:${username} merged:>=${twoDaysAgo.toISOString().split('T')[0]}`,
-      sort: 'updated',
-      order: 'desc',
-      per_page: 100,
-    });
+        const allComments = [...issueComments.data, ...reviewComments.data];
+        const userComments = allComments.filter(
+          comment => comment.user?.login === username && new Date(comment.created_at) >= previousWorkday,
+        );
+        const lastCommentDate =
+          userComments.length > 0 ? new Date(userComments[userComments.length - 1].created_at) : null;
+
+        return lastCommentDate
+          ? {
+              ...item,
+              updated_at: lastCommentDate,
+            }
+          : null;
+      }),
+    );
+    const filteredParticipatedPRs = participatedPRsWithComments.filter(Boolean);
 
     return [
       ...openPRs.data.items.map(item => ({
@@ -54,16 +83,16 @@ export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
         isAuthor: true,
         authorAvatarUrl: item.user?.avatar_url,
       })),
-      ...participatedPRs.data.items.map(item => ({
+      ...filteredParticipatedPRs.map(item => ({
         type: 'GitHub' as const,
-        title: item.title,
-        url: item.html_url,
-        updatedAt: item.updated_at,
-        isStale: new Date(item.updated_at) < previousWorkday,
-        isDraft: item.draft || false,
+        title: item?.title || '',
+        url: item?.html_url || '',
+        updatedAt: item?.updated_at ? formatISO(item?.updated_at) : undefined,
+        isStale: item?.updated_at ? item?.updated_at < previousWorkday : false,
+        isDraft: item?.draft || false,
         status: 'Participated',
         isAuthor: false,
-        authorAvatarUrl: item.user?.avatar_url,
+        authorAvatarUrl: item?.user?.avatar_url,
       })),
       ...mergedPRs.data.items.map(item => ({
         type: 'GitHub' as const,

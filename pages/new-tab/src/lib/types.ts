@@ -2,7 +2,7 @@ export type WorkItem = {
   type: 'Jira' | 'GitHub' | 'Calendar';
   title: string;
   url?: string;
-  updatedAt: string;
+  updatedAt?: string;
   isStale: boolean;
   status?: string;
   isDraft?: boolean;
