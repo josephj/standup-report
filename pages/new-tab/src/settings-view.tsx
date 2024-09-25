@@ -214,6 +214,7 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
   const [jiraInProgressStatuses, setJiraInProgressStatuses] = useState<JiraStatus[]>([]);
   const [jiraClosedStatuses, setJiraClosedStatuses] = useState<JiraStatus[]>([]);
   const [jiraStatuses, setJiraStatuses] = useState<JiraStatus[]>([]);
+  const [gcalExcludeKeywords, setGcalExcludeKeywords] = useState<string[]>(['stand-up', 'standup', 'lunch', 'home']);
 
   const fetchJiraStatuses = useCallback(async (token: string, url: string) => {
     if (!token || !url) return;
@@ -329,6 +330,13 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
         setJiraClosedStatuses(defaultClosedStatuses);
       }
     });
+
+    // Load Google Calendar excluded keywords from storage
+    chrome.storage.local.get('gcalExcludeKeywords', result => {
+      if (result.gcalExcludeKeywords) {
+        setGcalExcludeKeywords(result.gcalExcludeKeywords);
+      }
+    });
   }, [fetchJiraStatuses]);
 
   const validateToken = useCallback(
@@ -415,6 +423,9 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
       jiraInProgressStatuses,
       jiraClosedStatuses,
     });
+
+    // Save Google Calendar excluded keywords
+    chrome.storage.local.set({ gcalExcludeKeywords });
 
     onSave();
     toast({
@@ -554,6 +565,24 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
                       onChange={selected => setJiraClosedStatuses(selected as JiraStatus[])}
                       placeholder="Add or select statuses..."
                     />
+                  </>
+                )}
+
+                {system.name === 'Google Calendar' && (
+                  <>
+                    <FormLabel mt={4} fontSize="small">
+                      Excluded events
+                    </FormLabel>
+                    <CreatableSelect
+                      isMulti
+                      options={gcalExcludeKeywords.map(keyword => ({ value: keyword, label: keyword }))}
+                      value={gcalExcludeKeywords.map(keyword => ({ value: keyword, label: keyword }))}
+                      onChange={selected => setGcalExcludeKeywords(selected.map(item => item.value))}
+                      placeholder="Add or select keywords to exclude..."
+                    />
+                    <Text fontSize="xs" mt={1} color="gray.500">
+                      Events containing these keywords will be excluded from the report.
+                    </Text>
                   </>
                 )}
               </FormControl>

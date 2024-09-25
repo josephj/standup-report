@@ -3,10 +3,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faJira, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import { TimeIcon } from '@chakra-ui/icons';
+import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 
 import { getStatusColor } from './lib';
-
 import type { WorkItem } from './lib';
 
 type Props = {
@@ -15,6 +15,16 @@ type Props = {
 };
 
 export const WorkItems = ({ items, emptyMessage }: Props) => {
+  const [ongoingStatuses, setOngoingStatuses] = useState(['In Progress']);
+
+  useEffect(() => {
+    chrome.storage.local.get('jiraInProgressStatuses', result => {
+      setOngoingStatuses(
+        result.jiraInProgressStatuses.map((status: { value: string }) => status.value) || ['In Progress'],
+      );
+    });
+  }, []);
+
   if (items.length === 0 && emptyMessage) {
     return (
       <Box py={2} borderWidth={1} borderRadius="md" borderColor="gray.200">
@@ -91,7 +101,7 @@ export const WorkItems = ({ items, emptyMessage }: Props) => {
             </Flex>
             <Flex alignItems="center" flexShrink={0}>
               {item.status && (
-                <Badge fontSize="11px" colorScheme={getStatusColor(item.status)} mr={2}>
+                <Badge fontSize="11px" colorScheme={getStatusColor(item.status, ongoingStatuses)} mr={2}>
                   {item.status}
                 </Badge>
               )}

@@ -1,6 +1,10 @@
 import { CACHE_DURATION } from '../vars';
 
-export const getStatusColor = (status: string): string => {
+export const getStatusColor = (status: string, inProgressStatuses: string[] = ['In Progress']): string => {
+  if (inProgressStatuses.includes(status)) {
+    return 'blue';
+  }
+
   switch (status) {
     case 'Merged':
     case 'Closed':
