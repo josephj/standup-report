@@ -7,7 +7,7 @@ type CallOpenAIOptions = {
   onComplete?: (fullResponse: string) => void;
 };
 
-export const callOpenAI = async (prompt: string, options: CallOpenAIOptions) => {
+export const callOpenAI = async (systemPrompt: string, userPrompt: string, options: CallOpenAIOptions) => {
   const { openaiToken } = await chrome.storage.local.get('openaiToken');
   if (!openaiToken) {
     const error = new Error('OpenAI API key not found');
@@ -26,7 +26,10 @@ export const callOpenAI = async (prompt: string, options: CallOpenAIOptions) => 
     const stream = await openai.chat.completions.create(
       {
         model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
         temperature: 0,
         stream: true,
       },

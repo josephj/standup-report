@@ -5,83 +5,17 @@ import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import { TimeIcon } from '@chakra-ui/icons';
 import { formatDistanceToNow } from 'date-fns';
 
-import { getYesterdayOrLastFriday, getStatusColor } from './lib';
+import { getStatusColor } from './lib';
 
 import type { WorkItem } from './lib';
 
 type Props = {
   items: WorkItem[];
-  filter: 'ongoing' | 'yesterday' | 'stale';
-  emptyMessage?: string; // 新增這個可選屬性
+  emptyMessage?: string;
 };
 
-const filterWorkItems = (item: WorkItem, filter: 'ongoing' | 'yesterday' | 'stale') => {
-  const itemDate = new Date(item.type === 'Calendar' ? item.start! : item.updatedAt);
-  const yesterdayOrLastFriday = getYesterdayOrLastFriday();
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const yesterdayOrLastFridayStart = new Date(yesterdayOrLastFriday);
-  yesterdayOrLastFridayStart.setHours(0, 0, 0, 0);
-  const yesterdayOrLastFridayEnd = new Date(yesterdayOrLastFriday);
-  yesterdayOrLastFridayEnd.setHours(23, 59, 59, 999);
-
-  const isToday = itemDate > yesterdayOrLastFridayEnd;
-  const isYesterdayOrLastFriday = itemDate >= yesterdayOrLastFridayStart && itemDate < todayStart;
-
-  switch (filter) {
-    case 'ongoing':
-      if (item.type === 'Calendar') {
-        return isToday;
-      }
-
-      if (item.type === 'GitHub') {
-        if (['Open', 'Draft'].includes(item?.status || '')) {
-          return isYesterdayOrLastFriday;
-        }
-        if (item.status === 'Merged' || item.status === 'Participated') {
-          return isToday;
-        }
-      }
-
-      if (item.type === 'Jira') {
-        if (['Open', 'In Progress'].includes(item?.status || '')) {
-          return isYesterdayOrLastFriday;
-        }
-      }
-
-      return isToday && item.status !== 'Merged';
-    case 'yesterday':
-      if (item.type === 'GitHub') {
-        if (item.status === 'Merged' || item.status === 'Participated') {
-          return isYesterdayOrLastFriday;
-        }
-        if (['Open', 'Draft'].includes(item?.status || '')) {
-          return false;
-        }
-      }
-
-      if (item.type === 'Jira') {
-        return (
-          !item.isStale &&
-          item.status !== 'In Progress' &&
-          itemDate >= yesterdayOrLastFridayStart &&
-          itemDate < todayStart
-        );
-      }
-
-      return itemDate >= yesterdayOrLastFridayStart && itemDate < todayStart;
-    case 'stale':
-      if (item.type === 'GitHub' && !item.isAuthor && item.status === 'Participated') {
-        return false;
-      }
-      return item.isStale;
-  }
-};
-
-export const WorkItems = ({ items, filter, emptyMessage }: Props) => {
-  const filteredItems = items.filter(item => filterWorkItems(item, filter));
-
-  if (filteredItems.length === 0 && emptyMessage) {
+export const WorkItems = ({ items, emptyMessage }: Props) => {
+  if (items.length === 0 && emptyMessage) {
     return (
       <Box py={2} borderWidth={1} borderRadius="md" borderColor="gray.200">
         <Text>{emptyMessage}</Text>
@@ -91,7 +25,7 @@ export const WorkItems = ({ items, filter, emptyMessage }: Props) => {
 
   return (
     <List spacing={3}>
-      {filteredItems.map((item, index) => (
+      {items.map((item, index) => (
         <ListItem
           key={index}
           p={3}

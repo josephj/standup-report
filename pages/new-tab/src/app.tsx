@@ -12,7 +12,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { t } from '@extension/i18n';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 
 import { WorkItemsSkeleton, ZeroState } from './elements';
 import { SettingsView } from './settings-view';
@@ -21,7 +21,7 @@ import { WorkItems } from './work-items';
 import { fetchJiraItems, isMonday, defaultPrompt } from './lib';
 import type { WorkItem } from './lib';
 import { Header } from './header';
-import { fetchWithCache, fetchGitHubItems, fetchGcalItems, callOpenAI } from './lib/utils';
+import { fetchWithCache, fetchGitHubItems, fetchGcalItems, callOpenAI, groupWorkItems } from './lib/utils';
 import { faSyncAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -39,6 +39,8 @@ const AppContent = () => {
   const [hasValidTokens, setHasValidTokens] = useState(false);
   const [cachedReport, setCachedReport] = useState<string | null>(null);
   const toast = useToast();
+
+  const groupedItems = useMemo(() => groupWorkItems(workItems), [workItems]);
 
   const checkTokens = useCallback(async () => {
     const { jiraToken, githubToken, googleCalendarToken, openaiToken } = await chrome.storage.local.get([
@@ -101,15 +103,21 @@ const AppContent = () => {
     setIsGeneratingReport(true);
     setAiGeneratedReport('');
 
-    const workItemsText = workItems
-      .map(item => `${item.type}: ${item.title} (${item.status || 'No status'}) - Updated: ${item.updatedAt}`)
-      .join('\n');
+    const workItemsText = Object.entries(groupedItems)
+      .map(([group, items]) => {
+        const itemsText = items
+          .map(item => `  - ${item.type}: ${item.title} (${item.status || 'No status'}) - Updated: ${item.updatedAt}`)
+          .join('\n');
+        return `${group.charAt(0).toUpperCase() + group.slice(1)}:\n${itemsText}`;
+      })
+      .join('\n\n');
 
     const { customPrompt } = await chrome.storage.sync.get(['customPrompt']);
 
-    const prompt = `${customPrompt || defaultPrompt}\n\nCurrent date and time: ${new Date()}\n\nWork items:\n${workItemsText}`;
+    const systemPrompt = `Current date and time: ${new Date()}\n\n${customPrompt || defaultPrompt}`;
+    const userPrompot = `Work items:\n\n${workItemsText}`;
 
-    await callOpenAI(prompt, {
+    await callOpenAI(systemPrompt, userPrompot, {
       onAbort: () => {
         console.log('Fetch aborted');
       },
@@ -127,7 +135,7 @@ const AppContent = () => {
     });
 
     setIsGeneratingReport(false);
-  }, [workItems]);
+  }, [workItems, groupedItems]);
 
   const handleSaveSetting = useCallback(async () => {
     await checkTokens();
@@ -183,13 +191,13 @@ const AppContent = () => {
                     <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
                       🔥 Ongoing
                     </Heading>
-                    {isLoading ? <WorkItemsSkeleton /> : <WorkItems items={workItems} filter="ongoing" />}
+                    {isLoading ? <WorkItemsSkeleton /> : <WorkItems items={groupedItems['ongoing']} />}
                   </Box>
                   <Box>
                     <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
                       {isMonday() ? '📅 Last Friday' : '⏰ Yesterday'}
                     </Heading>
-                    {isLoading ? <WorkItemsSkeleton /> : <WorkItems items={workItems} filter="yesterday" />}
+                    {isLoading ? <WorkItemsSkeleton /> : <WorkItems items={groupedItems['yesterday']} />}
                   </Box>
                   <Box>
                     <Heading size="sm" mb={4} color="gray.700" textShadow="1px 1px 1px rgba(255,255,255)">
@@ -198,7 +206,7 @@ const AppContent = () => {
                     {isLoading ? (
                       <WorkItemsSkeleton />
                     ) : (
-                      <WorkItems items={workItems} filter="stale" emptyMessage="🎉 No stale items found" />
+                      <WorkItems items={groupedItems['stale']} emptyMessage="🎉 No stale items found" />
                     )}
                   </Box>
                 </VStack>
