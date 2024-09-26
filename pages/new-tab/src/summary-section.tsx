@@ -33,7 +33,6 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
   const [customPrompt, setCustomPrompt] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load custom prompt from Chrome storage
     chrome.storage.sync.get(['customPrompt'], result => {
       if (result.customPrompt) {
         setCustomPrompt(result.customPrompt);
