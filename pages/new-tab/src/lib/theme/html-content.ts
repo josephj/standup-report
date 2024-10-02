@@ -20,9 +20,10 @@ export const HtmlContent = defineStyleConfig({
       marginBlockStart: '1em',
       marginBlockEnd: '1em',
       'ul, ol': {
-        paddingInlineStart: '20px',
-        marginBlockStart: '0.5em',
-        marginBlockEnd: '0.5em',
+        paddingInlineStart: '10px',
+        marginBlockStart: '0.1em',
+        marginBlockEnd: '0.1em',
+        marginBottom: '0',
       },
     },
     ul: {

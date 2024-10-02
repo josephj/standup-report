@@ -230,6 +230,8 @@ const AppContent = () => {
                 onGenerateReport={handleGenerateReport}
                 abortControllerRef={abortControllerRef}
                 setIsGeneratingReport={setIsGeneratingReport}
+                setCachedReport={setCachedReport}
+                setAiGeneratedReport={setAiGeneratedReport}
               />
             </Flex>
           </VStack>
