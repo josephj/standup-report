@@ -38,9 +38,6 @@ const manifest = {
   action: {
     default_icon: 'icon-34.png',
   },
-  chrome_url_overrides: {
-    newtab: 'new-tab/index.html',
-  },
   host_permissions: ['https://*.atlassian.net/'],
   icons: {
     128: 'icon-128.png',
