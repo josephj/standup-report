@@ -500,7 +500,7 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
               <HStack spacing="4">
                 <Switch
                   id="custom-new-tab"
-                  isChecked={overrideNewTab}
+                  isChecked={overrideNewTab === true}
                   onChange={e => setOverrideNewTab(e.target.checked)}
                 />
                 <Stack spacing="1">
