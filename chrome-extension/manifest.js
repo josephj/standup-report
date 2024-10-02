@@ -45,10 +45,10 @@ const manifest = {
   content_scripts: [],
   web_accessible_resources: [
     {
-      resources: ['*.js', '*.css', '*.svg', 'icon-128.png', 'icon-34.png'],
-      matches: ['*://*/*'],
+      resources: ['*.js', '*.css', '*.svg', 'icon-128.png', 'icon-34.png', 'intro.html'],
+      matches: ['<all_urls>'],
     },
   ],
 };
 
-export default manifest;
+module.exports = manifest;
