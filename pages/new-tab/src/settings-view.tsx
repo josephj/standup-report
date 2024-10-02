@@ -19,6 +19,9 @@ import {
   InputRightElement,
   Spinner,
   Stack,
+  Switch,
+  FormHelperText,
+  HStack,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
@@ -109,26 +112,7 @@ const systems: SystemConfig[] = [
       ],
     },
   },
-  {
-    name: 'OpenAI',
-    connectFunction: async (token: string) => {
-      try {
-        const response = await fetch('https://api.openai.com/v1/models', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        return response.ok;
-      } catch (error) {
-        console.error('Error validating OpenAI token:', error);
-        return false;
-      }
-    },
-    tokenGuideUrl: 'https://platform.openai.com/account/api-keys',
-    placeholder: 'sk-...',
-    requiresUrl: false,
-    icon: faRobot,
-  },
+
   {
     name: 'Google Calendar',
     connectFunction: async () => {
@@ -200,6 +184,26 @@ const systems: SystemConfig[] = [
     useOAuth: true,
     isConnected: false,
   },
+  {
+    name: 'OpenAI',
+    connectFunction: async (token: string) => {
+      try {
+        const response = await fetch('https://api.openai.com/v1/models', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        return response.ok;
+      } catch (error) {
+        console.error('Error validating OpenAI token:', error);
+        return false;
+      }
+    },
+    tokenGuideUrl: 'https://platform.openai.com/account/api-keys',
+    placeholder: 'sk-...',
+    requiresUrl: false,
+    icon: faRobot,
+  },
 ];
 
 export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
@@ -215,6 +219,7 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
   const [jiraClosedStatuses, setJiraClosedStatuses] = useState<JiraStatus[]>([]);
   const [jiraStatuses, setJiraStatuses] = useState<JiraStatus[]>([]);
   const [gcalExcludeKeywords, setGcalExcludeKeywords] = useState<string[]>(['stand-up', 'standup', 'lunch', 'home']);
+  const [overrideNewTab, setOverrideNewTab] = useState(false);
 
   const fetchJiraStatuses = useCallback(async (token: string, url: string) => {
     if (!token || !url) return;
@@ -337,6 +342,11 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
         setGcalExcludeKeywords(result.gcalExcludeKeywords);
       }
     });
+
+    // Load overrideNewTab setting
+    chrome.storage.sync.get('overrideNewTab', result => {
+      setOverrideNewTab(result.overrideNewTab ?? true);
+    });
   }, [fetchJiraStatuses]);
 
   const validateToken = useCallback(
@@ -427,6 +437,12 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     // Save Google Calendar excluded keywords
     chrome.storage.local.set({ gcalExcludeKeywords });
 
+    // Save overrideNewTab setting
+    chrome.storage.sync.set({ overrideNewTab });
+
+    // Send message to update new tab override
+    chrome.runtime.sendMessage({ type: 'UPDATE_NEW_TAB_OVERRIDE', value: overrideNewTab });
+
     onSave();
     toast({
       title: 'Settings saved successfully',
@@ -480,6 +496,22 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={6}>
+            <FormControl display="flex" alignItems="center">
+              <HStack spacing="4">
+                <Switch
+                  id="custom-new-tab"
+                  isChecked={overrideNewTab}
+                  onChange={e => setOverrideNewTab(e.target.checked)}
+                />
+                <Stack spacing="1">
+                  <FormLabel htmlFor="custom-new-tab" mb="0">
+                    Override chrome://newtab/
+                  </FormLabel>
+                  <FormHelperText mt={0}>Show this page when new tab is opened</FormHelperText>
+                </Stack>
+              </HStack>
+            </FormControl>
+
             {systems.map(system => (
               <FormControl key={system.name}>
                 <FormLabel>
