@@ -46,7 +46,9 @@ function isOngoingItem(item: WorkItem, isToday: boolean, ongoingStatuses: string
     case 'Calendar':
       return isToday;
     case 'GitHub':
-      return ['Open', 'Draft'].includes(status) || (['Merged', 'Participated'].includes(status) && isToday);
+      return (
+        ['Open', 'Draft', 'Requested'].includes(status) || (['Merged', 'Participated'].includes(status) && isToday)
+      );
     case 'Jira':
       return ongoingStatuses.includes(status);
     default:
