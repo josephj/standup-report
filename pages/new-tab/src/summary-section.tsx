@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Heading, Flex, Text, Button, IconButton, Tooltip, HStack, useDisclosure } from '@chakra-ui/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faSyncAlt, faStar, faMagicWandSparkles } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faSyncAlt, faStar, faMagicWandSparkles, faDownload } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { HtmlContent } from './html-content';
@@ -105,6 +105,23 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
     },
   };
 
+  const handleDownload = useCallback(() => {
+    const content = aiGeneratedReport || cachedReport || '';
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+
+    const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const fileName = `standup-summary_${currentDate}.md`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [aiGeneratedReport, cachedReport]);
+
   return (
     <Box flex="1">
       <HStack mb={4}>
@@ -132,6 +149,17 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                 variant="outline"
                 colorScheme="purple"
                 size="xs"
+              />
+            </Tooltip>
+            <Tooltip label="Download report" hasArrow fontSize="x-small" aria-label="Download report">
+              <IconButton
+                aria-label="Download Report"
+                icon={<FontAwesomeIcon icon={faDownload} />}
+                onClick={handleDownload}
+                variant="outline"
+                colorScheme="green"
+                size="xs"
+                isDisabled={!aiGeneratedReport && !cachedReport}
               />
             </Tooltip>
           </>
