@@ -28,7 +28,6 @@ export async function fetchGcalItems(): Promise<WorkItem[]> {
     }>(resolve => {
       chrome.storage.local.get('gcalExcludeKeywords', result => resolve(result));
     });
-    console.log('gcalExcludeKeywords :', gcalExcludeKeywords);
 
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
