@@ -51,4 +51,4 @@ const manifest = {
   ],
 };
 
-module.exports = manifest;
+export default manifest;
