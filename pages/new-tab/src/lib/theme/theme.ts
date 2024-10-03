@@ -7,7 +7,7 @@ export const theme = extendTheme({
   },
   styles: {
     global: {
-      body: {
+      'html, body': {
         bg: 'linear-gradient(45deg, #f3e7e9 0%, #e3eeff 99%, #e3eeff 100%)',
       },
     },
