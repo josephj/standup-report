@@ -22,6 +22,7 @@ import {
   Switch,
   FormHelperText,
   HStack,
+  StackDivider,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
@@ -538,7 +539,7 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <VStack spacing={6}>
+          <VStack spacing={6} divider={<StackDivider borderStyle="dotted" borderColor="gray.500" />}>
             <FormControl display="flex" alignItems="center">
               <HStack spacing="4">
                 <Switch
@@ -664,8 +665,8 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
                 {system.name === 'GitHub' && (
                   <>
                     <FormControl display="flex" alignItems="center" mt={4}>
-                      <FormLabel htmlFor="github-specific-repos" mb="0">
-                        Use specific repositories
+                      <FormLabel htmlFor="github-specific-repos" mb="0" fontSize="small">
+                        Select specific repos
                       </FormLabel>
                       <Switch
                         id="github-specific-repos"
@@ -678,23 +679,21 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
                         }}
                       />
                     </FormControl>
-                    {githubUseSpecificRepos && (
-                      <FormControl mt={2}>
-                        <FormLabel>Select repositories</FormLabel>
-                        <Select
-                          isMulti
-                          options={githubRepos}
-                          value={selectedGithubRepos}
-                          onChange={selected => setSelectedGithubRepos(selected as { value: string; label: string }[])}
-                          placeholder="Select repositories..."
-                          onFocus={() => {
-                            if (githubRepos.length === 0) {
-                              fetchGithubRepos();
-                            }
-                          }}
-                        />
-                      </FormControl>
-                    )}
+                    <FormControl mt={2}>
+                      <Select
+                        isMulti
+                        isDisabled={!githubUseSpecificRepos}
+                        options={githubRepos}
+                        value={selectedGithubRepos}
+                        onChange={selected => setSelectedGithubRepos(selected as { value: string; label: string }[])}
+                        placeholder="Select repositories..."
+                        onFocus={() => {
+                          if (githubRepos.length === 0) {
+                            fetchGithubRepos();
+                          }
+                        }}
+                      />
+                    </FormControl>
                   </>
                 )}
               </FormControl>
