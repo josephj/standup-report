@@ -1,6 +1,6 @@
 {
   "name": "standup-report",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "description": "Automatically generate your daily stand-up report without any hassle",
   "license": "MIT",
   "repository": {
