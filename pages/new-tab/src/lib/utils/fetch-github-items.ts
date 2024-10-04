@@ -31,13 +31,12 @@ export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
       per_page: 20,
     });
 
-    const assignedPRs = await octokit.search.issuesAndPullRequests({
+    const userReviewRequestedPRs = await octokit.search.issuesAndPullRequests({
       q: `is:pr is:open user-review-requested:${username} updated:>=${format(previousWorkday, 'yyyy-MM-dd')}`,
       sort: 'updated',
       order: 'desc',
       per_page: 20,
     });
-    console.log('assignedPRs :', assignedPRs);
 
     const participatedPRs = await octokit.search.issuesAndPullRequests({
       q: `is:pr -author:${username} commenter:${username} updated:>=${format(previousWorkday, 'yyyy-MM-dd')}`,
@@ -113,7 +112,7 @@ export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
         isAuthor: true,
         authorAvatarUrl: item.user?.avatar_url,
       })),
-      ...assignedPRs.data.items.map(item => ({
+      ...userReviewRequestedPRs.data.items.map(item => ({
         type: 'GitHub' as const,
         title: item?.title || '',
         url: item?.html_url || '',
