@@ -22,6 +22,7 @@ import {
   Switch,
   FormHelperText,
   HStack,
+  StackDivider,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { debounce } from 'lodash';
@@ -30,6 +31,7 @@ import { faGithub, faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
 import { faRobot, faCog } from '@fortawesome/free-solid-svg-icons';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import CreatableSelect from 'react-select/creatable';
+import Select from 'react-select';
 
 type Props = {
   isOpen: boolean;
@@ -53,6 +55,7 @@ interface SystemConfig {
     inProgress: JiraStatus[];
     closed: JiraStatus[];
   };
+  fetchRepos?: () => Promise<{ value: string; label: string }[]>;
 }
 
 const systems: SystemConfig[] = [
@@ -74,6 +77,24 @@ const systems: SystemConfig[] = [
     tokenGuideUrl: 'https://github.com/settings/tokens/new?scopes=repo,user&description=StandupReportExtension',
     icon: faGithub,
     placeholder: 'ghp_...',
+    fetchRepos: async () => {
+      const { githubToken } = await chrome.storage.local.get('githubToken');
+      if (!githubToken) return [];
+
+      try {
+        const response = await fetch('https://api.github.com/user/repos?per_page=100', {
+          headers: {
+            Authorization: `token ${githubToken}`,
+          },
+        });
+        if (!response.ok) throw new Error('Failed to fetch repos');
+        const repos = await response.json();
+        return repos.map((repo: any) => ({ value: repo.full_name, label: repo.full_name }));
+      } catch (error) {
+        console.error('Error fetching GitHub repos:', error);
+        return [];
+      }
+    },
   },
   {
     name: 'Jira',
@@ -220,6 +241,9 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
   const [jiraStatuses, setJiraStatuses] = useState<JiraStatus[]>([]);
   const [gcalExcludeKeywords, setGcalExcludeKeywords] = useState<string[]>(['stand-up', 'standup', 'lunch', 'home']);
   const [overrideNewTab, setOverrideNewTab] = useState(false);
+  const [githubUseSpecificRepos, setGithubUseSpecificRepos] = useState(false);
+  const [githubRepos, setGithubRepos] = useState<{ value: string; label: string }[]>([]);
+  const [selectedGithubRepos, setSelectedGithubRepos] = useState<{ value: string; label: string }[]>([]);
 
   const fetchJiraStatuses = useCallback(async (token: string, url: string) => {
     if (!token || !url) return;
@@ -347,6 +371,12 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     chrome.storage.sync.get('overrideNewTab', result => {
       setOverrideNewTab(result.overrideNewTab ?? true);
     });
+
+    // Load GitHub settings
+    chrome.storage.local.get(['githubUseSpecificRepos', 'githubSelectedRepos'], result => {
+      setGithubUseSpecificRepos(result.githubUseSpecificRepos || false);
+      setSelectedGithubRepos(result.githubSelectedRepos || []);
+    });
   }, [fetchJiraStatuses]);
 
   const validateToken = useCallback(
@@ -440,6 +470,12 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     // Save overrideNewTab setting
     chrome.storage.sync.set({ overrideNewTab });
 
+    // Save GitHub specific settings
+    chrome.storage.local.set({
+      githubUseSpecificRepos,
+      githubSelectedRepos: selectedGithubRepos,
+    });
+
     // Send message to update new tab override
     chrome.runtime.sendMessage({ type: 'UPDATE_NEW_TAB_OVERRIDE', value: overrideNewTab });
 
@@ -486,6 +522,14 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     }
   };
 
+  const fetchGithubRepos = async () => {
+    const githubSystem = systems.find(s => s.name === 'GitHub');
+    if (githubSystem && githubSystem.fetchRepos) {
+      const repos = await githubSystem.fetchRepos();
+      setGithubRepos(repos);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
       <ModalOverlay />
@@ -495,7 +539,7 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <VStack spacing={6}>
+          <VStack spacing={6} divider={<StackDivider borderStyle="dotted" borderColor="gray.500" />}>
             <FormControl display="flex" alignItems="center">
               <HStack spacing="4">
                 <Switch
@@ -615,6 +659,41 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
                     <Text fontSize="xs" mt={1} color="gray.500">
                       Events containing these keywords will be excluded from the report.
                     </Text>
+                  </>
+                )}
+
+                {system.name === 'GitHub' && (
+                  <>
+                    <FormControl display="flex" alignItems="center" mt={4}>
+                      <FormLabel htmlFor="github-specific-repos" mb="0" fontSize="small">
+                        Select specific repos
+                      </FormLabel>
+                      <Switch
+                        id="github-specific-repos"
+                        isChecked={githubUseSpecificRepos}
+                        onChange={e => {
+                          setGithubUseSpecificRepos(e.target.checked);
+                          if (e.target.checked && githubRepos.length === 0) {
+                            fetchGithubRepos();
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormControl mt={2}>
+                      <Select
+                        isMulti
+                        isDisabled={!githubUseSpecificRepos}
+                        options={githubRepos}
+                        value={selectedGithubRepos}
+                        onChange={selected => setSelectedGithubRepos(selected as { value: string; label: string }[])}
+                        placeholder="Select repositories..."
+                        onFocus={() => {
+                          if (githubRepos.length === 0) {
+                            fetchGithubRepos();
+                          }
+                        }}
+                      />
+                    </FormControl>
                   </>
                 )}
               </FormControl>

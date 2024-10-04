@@ -4,7 +4,11 @@ import { getPreviousWorkday } from './date';
 import { format, formatISO } from 'date-fns';
 
 export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
-  const { githubToken } = await chrome.storage.local.get('githubToken');
+  const { githubToken, githubUseSpecificRepos, githubSelectedRepos } = await chrome.storage.local.get([
+    'githubToken',
+    'githubUseSpecificRepos',
+    'githubSelectedRepos',
+  ]);
 
   if (!githubToken) {
     throw new Error('GitHub token not found in local storage');
@@ -13,33 +17,38 @@ export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
   const octokit = new Octokit({ auth: githubToken });
   const previousWorkday = getPreviousWorkday();
 
+  const repoFilter =
+    githubUseSpecificRepos && githubSelectedRepos.length > 0
+      ? `repo:${githubSelectedRepos.map(repo => repo.value).join(' repo:')}`
+      : '';
+
   try {
     const { data: user } = await octokit.users.getAuthenticated();
     const username = user.login;
 
     const openPRs = await octokit.search.issuesAndPullRequests({
-      q: `is:open is:pr author:${username}`,
+      q: `is:open is:pr author:${username} ${repoFilter}`,
       sort: 'updated',
       order: 'desc',
       per_page: 20,
     });
 
     const mergedPRs = await octokit.search.issuesAndPullRequests({
-      q: `is:pr is:merged author:${username} merged:>=${format(previousWorkday, 'yyyy-MM-dd')}`,
+      q: `is:pr is:merged author:${username} merged:>=${format(previousWorkday, 'yyyy-MM-dd')} ${repoFilter}`,
       sort: 'updated',
       order: 'desc',
       per_page: 20,
     });
 
     const userReviewRequestedPRs = await octokit.search.issuesAndPullRequests({
-      q: `is:pr is:open user-review-requested:${username} updated:>=${format(previousWorkday, 'yyyy-MM-dd')}`,
+      q: `is:pr is:open user-review-requested:${username} updated:>=${format(previousWorkday, 'yyyy-MM-dd')} ${repoFilter}`,
       sort: 'updated',
       order: 'desc',
       per_page: 20,
     });
 
     const participatedPRs = await octokit.search.issuesAndPullRequests({
-      q: `is:pr -author:${username} commenter:${username} updated:>=${format(previousWorkday, 'yyyy-MM-dd')}`,
+      q: `is:pr -author:${username} commenter:${username} updated:>=${format(previousWorkday, 'yyyy-MM-dd')} ${repoFilter}`,
       sort: 'updated',
       order: 'desc',
       per_page: 20,
