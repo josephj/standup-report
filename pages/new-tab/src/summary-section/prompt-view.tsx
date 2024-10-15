@@ -8,10 +8,9 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Box,
 } from '@chakra-ui/react';
 
-import { RichTextEditor } from './elements/rich-text-editor';
+import { RichTextEditor } from '../elements';
 
 type Props = {
   initialPrompt: string;

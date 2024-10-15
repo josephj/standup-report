@@ -14,6 +14,12 @@ export type WorkItem = {
   assigneeAvatarUrl?: string;
 };
 
+export type GroupedWorkItems = {
+  ongoing: WorkItem[];
+  yesterday: WorkItem[];
+  stale: WorkItem[];
+};
+
 export type JiraIssue = {
   id: string;
   key: string;

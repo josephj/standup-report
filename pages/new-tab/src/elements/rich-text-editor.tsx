@@ -8,7 +8,7 @@ import { CKEditor } from '@ckeditor/ckeditor5-react';
 import { editorConfig } from '../lib';
 import { HtmlContent } from '../html-content';
 
-type Props = BoxProps & {
+type Props = Omit<BoxProps, 'onChange'> & {
   value?: string;
   defaultValue?: string;
   height?: string;
