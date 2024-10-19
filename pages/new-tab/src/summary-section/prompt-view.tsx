@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Button,
   Modal,
@@ -9,6 +8,7 @@ import {
   ModalBody,
   ModalCloseButton,
 } from '@chakra-ui/react';
+import { useState } from 'react';
 
 import { RichTextEditor } from '../elements';
 

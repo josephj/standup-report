@@ -3,9 +3,9 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { ckEditorContentStyles } from './styles';
 import { RichTextEditor } from '../elements';
 import { HtmlContent } from '../html-content';
-import { ckEditorContentStyles } from './styles';
 
 type Props = {
   isEditing: boolean;

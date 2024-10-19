@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import {
   Modal,
   ModalOverlay,
@@ -24,14 +24,14 @@ import {
   HStack,
   StackDivider,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import { debounce } from 'lodash';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faGithub, faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
 import { faRobot, faCog } from '@fortawesome/free-solid-svg-icons';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import CreatableSelect from 'react-select/creatable';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { debounce } from 'lodash';
+import { useState, useCallback, useEffect } from 'react';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 
 type Props = {
   isOpen: boolean;

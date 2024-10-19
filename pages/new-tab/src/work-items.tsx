@@ -1,13 +1,13 @@
+import { TimeIcon } from '@chakra-ui/icons';
 import { List, ListItem, Flex, Box, Text, Link, Badge } from '@chakra-ui/react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faJira, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
-import { TimeIcon } from '@chakra-ui/icons';
-import { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { formatDistanceToNow } from 'date-fns';
+import { useEffect, useState } from 'react';
 
-import { getStatusColor } from './lib';
 import type { WorkItem } from './lib';
+import { getStatusColor } from './lib';
 
 type Props = {
   items: WorkItem[];

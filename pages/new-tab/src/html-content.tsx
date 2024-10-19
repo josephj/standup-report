@@ -1,6 +1,7 @@
-import { Box } from '@chakra-ui/react';
 import type { BoxProps } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import { forwardRef } from 'react';
+
 import { HtmlContent as ChakraHtmlContentTheme } from './lib/theme/html-content';
 
 /**

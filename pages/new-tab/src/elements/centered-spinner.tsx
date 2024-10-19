@@ -1,6 +1,6 @@
-import React from 'react';
 import type { SpinnerProps, CenterProps } from '@chakra-ui/react';
 import { Center, Spinner } from '@chakra-ui/react';
+import React from 'react';
 
 type Props = CenterProps & {
   spinnerSize?: SpinnerProps['size'];
