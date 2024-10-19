@@ -1,0 +1,15 @@
+{
+  "extends": ["../../.eslintrc"],
+  "plugins": ["import"],
+  "rules": {
+    "import/order": [
+      "error",
+      {
+        "alphabetize": { "order": "asc", "caseInsensitive": true, "orderImportKind": "asc" },
+        "groups": ["builtin", "external", "internal", "index", ["parent", "sibling"], "object"],
+        "newlines-between": "always"
+      }
+    ],
+    "import/no-default-export": "error"
+  }
+}

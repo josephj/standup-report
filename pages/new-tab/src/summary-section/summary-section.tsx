@@ -1,13 +1,13 @@
 import { Box, Button, Flex, HStack, Heading, IconButton, Tooltip, useDisclosure, useBoolean } from '@chakra-ui/react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSyncAlt, faStar, faMagicWandSparkles, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-import { callOpenAI, defaultPrompt } from '../lib';
-import type { GroupedWorkItems } from '../lib';
 import { ContentView } from './content-view';
 import { PromptView } from './prompt-view';
 import { ZeroState } from './zero-state';
+import type { GroupedWorkItems } from '../lib';
+import { callOpenAI, defaultPrompt } from '../lib';
 
 type Props = {
   groupedItems: GroupedWorkItems;
@@ -93,7 +93,7 @@ export const SummarySection: React.FC<Props> = ({ groupedItems, onOpenSettings }
     });
 
     setGeneratingReport.off();
-  }, [groupedItems, setGeneratingReport]);
+  }, [groupedItems, setEditing, setGeneratingReport]);
 
   const handleDownloadReport = useCallback(() => {
     const content = aiGeneratedReport || cachedReport || '';
