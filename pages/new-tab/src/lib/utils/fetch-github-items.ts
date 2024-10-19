@@ -1,7 +1,8 @@
-import type { WorkItem } from '../types';
 import { Octokit } from '@octokit/rest';
-import { getPreviousWorkday } from './date';
 import { format, formatISO } from 'date-fns';
+
+import { getPreviousWorkday } from './date';
+import type { WorkItem } from '../types';
 
 export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
   const { githubToken, githubUseSpecificRepos, githubSelectedRepos } = await chrome.storage.local.get([

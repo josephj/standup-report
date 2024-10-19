@@ -1,5 +1,5 @@
-import type { GroupedWorkItems, WorkItem } from '../types';
 import { getYesterdayOrLastFriday } from './date';
+import type { GroupedWorkItems, WorkItem } from '../types';
 
 export const groupWorkItems = (items: WorkItem[], ongoingStatuses: string[]): GroupedWorkItems => {
   const yesterdayOrLastFriday = getYesterdayOrLastFriday();

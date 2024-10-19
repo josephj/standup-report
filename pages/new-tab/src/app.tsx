@@ -1,4 +1,3 @@
-import { withErrorBoundary, withSuspense } from '@extension/shared';
 import {
   Box,
   VStack,
@@ -12,18 +11,19 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { t } from '@extension/i18n';
+import { withErrorBoundary, withSuspense } from '@extension/shared';
+import { faSyncAlt } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 
 import { WorkItemsSkeleton, ZeroState } from './elements';
+import { Header } from './header';
+import type { WorkItem } from './lib';
+import { fetchJiraItems, isMonday } from './lib';
+import { fetchWithCache, fetchGitHubItems, fetchGcalItems, groupWorkItems } from './lib/utils';
 import { SettingsView } from './settings-view';
 import { SummarySection } from './summary-section';
 import { WorkItems } from './work-items';
-import { fetchJiraItems, isMonday } from './lib';
-import type { WorkItem } from './lib';
-import { Header } from './header';
-import { fetchWithCache, fetchGitHubItems, fetchGcalItems, groupWorkItems } from './lib/utils';
-import { faSyncAlt } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import 'ckeditor5/ckeditor5.css';
 import './app.css';

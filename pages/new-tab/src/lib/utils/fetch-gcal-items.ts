@@ -1,6 +1,7 @@
-import type { WorkItem, CalendarEvent } from '../types';
+import { startOfDay, endOfDay } from 'date-fns';
+
 import { getPreviousWorkday } from './date';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import type { WorkItem, CalendarEvent } from '../types';
 
 async function getAuthToken(): Promise<string> {
   return new Promise((resolve, reject) => {

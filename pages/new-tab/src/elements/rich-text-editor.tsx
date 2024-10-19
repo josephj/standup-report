@@ -1,12 +1,11 @@
-import { ClassicEditor } from 'ckeditor5';
-import { Box, useBoolean } from '@chakra-ui/react';
 import type { BoxProps } from '@chakra-ui/react';
+import { Box, useBoolean } from '@chakra-ui/react';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import { ClassicEditor } from 'ckeditor5';
 import { useRef, useEffect, useMemo, useState } from 'react';
 
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-
-import { editorConfig } from '../lib';
 import { HtmlContent } from '../html-content';
+import { editorConfig } from '../lib';
 
 type Props = Omit<BoxProps, 'onChange'> & {
   value?: string;

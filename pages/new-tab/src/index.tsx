@@ -1,8 +1,7 @@
-import { createRoot } from 'react-dom/client';
-// import '@src/index.css';
-// import '@extension/ui/lib/global.css';
 import { ChakraProvider } from '@chakra-ui/react';
 import { App } from '@src/app';
+import { createRoot } from 'react-dom/client';
+
 import { theme } from './lib';
 
 function init() {

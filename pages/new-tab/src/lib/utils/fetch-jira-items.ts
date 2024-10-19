@@ -1,7 +1,8 @@
 import axios from 'axios';
-import type { JiraIssue, WorkItem } from '../types';
-import { getPreviousWorkday } from './date';
 import { format } from 'date-fns';
+
+import { getPreviousWorkday } from './date';
+import type { JiraIssue, WorkItem } from '../types';
 
 type JiraStatus = { value: string; label: string };
 
