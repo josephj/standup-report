@@ -36,7 +36,7 @@
     "@uiw/react-md-editor": "^4.0.4",
     "axios": "^1.7.7",
     "ckeditor5": "^43.1.0",
-    "date-fns": "^2.30.0",
+    "date-fns": "^4.1.0",
     "framer-motion": "^11.5.4",
     "langchain": "^0.2.18",
     "lodash": "^4.17.21",
