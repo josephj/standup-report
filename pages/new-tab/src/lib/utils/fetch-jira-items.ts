@@ -56,7 +56,7 @@ export const fetchJiraItems = async (): Promise<WorkItem[]> => {
   ]);
 
   if (!jiraUrl) {
-    throw new Error('jiraUrl not found in local storage');
+    return [];
   }
 
   const baseUrl = jiraUrl.startsWith('http') ? jiraUrl : `https://${jiraUrl}`;

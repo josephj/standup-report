@@ -41,7 +41,7 @@ const AppContent = () => {
   useEffect(() => {
     chrome.storage.local.get('jiraInProgressStatuses', result => {
       setOngoingStatuses(
-        result.jiraInProgressStatuses.map((status: { value: string }) => status.value) || ['In Progress'],
+        result.jiraInProgressStatuses?.map((status: { value: string }) => status.value) || ['In Progress'],
       );
     });
   }, []);
@@ -84,8 +84,10 @@ const AppContent = () => {
   }, [setLoading, toast]);
 
   useEffect(() => {
-    fetchWorkItems();
-  }, [fetchWorkItems]);
+    if (hasValidTokens) {
+      fetchWorkItems();
+    }
+  }, [fetchWorkItems, hasValidTokens]);
 
   const handleSaveSetting = useCallback(async () => {
     await checkTokens();

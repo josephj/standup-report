@@ -12,7 +12,7 @@ export const fetchGitHubItems = async (): Promise<WorkItem[]> => {
   ]);
 
   if (!githubToken) {
-    throw new Error('GitHub token not found in local storage');
+    return [];
   }
 
   const octokit = new Octokit({ auth: githubToken });
