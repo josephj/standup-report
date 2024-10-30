@@ -1,4 +1,4 @@
-export * from './call-open-ai';
+export * from './ask-assistant';
 export * from './date';
 export * from './fetch-gcal-items';
 export * from './fetch-github-items';
