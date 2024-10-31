@@ -5,23 +5,20 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import { ContentView } from './content-view';
 import { PromptView } from './prompt-view';
-import { ZeroState } from './zero-state';
 import type { GroupedWorkItems } from '../lib';
 import { askAssistant, defaultPrompt } from '../lib';
 
 type Props = {
   groupedItems: GroupedWorkItems;
-  onOpenSettings: () => void;
 };
 
-export const SummarySection: React.FC<Props> = ({ groupedItems, onOpenSettings }) => {
+export const SummarySection: React.FC<Props> = ({ groupedItems }) => {
   const { isOpen: isPromptOpen, onOpen: onOpenPrompt, onClose: onClosePrompt } = useDisclosure();
   const [isEditing, setEditing] = useBoolean();
   const [isGeneratingReport, setGeneratingReport] = useBoolean();
   const [customPrompt, setCustomPrompt] = useState<string | null>(null);
   const [aiGeneratedReport, setAiGeneratedReport] = useState<string>('');
   const [cachedReport, setCachedReport] = useState<string | null>(null);
-  const [hasOpenAIToken, setHasOpenAIToken] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -31,11 +28,10 @@ export const SummarySection: React.FC<Props> = ({ groupedItems, onOpenSettings }
       }
     });
 
-    chrome.storage.local.get(['cachedReport', 'openaiToken'], result => {
+    chrome.storage.local.get(['cachedReport'], result => {
       if (result.cachedReport) {
         setCachedReport(result.cachedReport);
       }
-      setHasOpenAIToken(Boolean(result.openaiToken));
     });
   }, []);
 
@@ -118,42 +114,38 @@ export const SummarySection: React.FC<Props> = ({ groupedItems, onOpenSettings }
         <Heading size="md" color="gray.700" textShadow="1px 1px 0 rgba(255,255,255)">
           📊 Summary
         </Heading>
-        {hasOpenAIToken ? (
-          <>
-            <Tooltip label="Force refresh" hasArrow fontSize="x-small" aria-label="Force refresh">
-              <IconButton
-                aria-label="Generate new report"
-                icon={<FontAwesomeIcon icon={faSyncAlt} />}
-                onClick={handleGenerateReport}
-                isLoading={isGeneratingReport}
-                variant="outline"
-                colorScheme="blue"
-                size="xs"
-              />
-            </Tooltip>
-            <Tooltip label="Edit prompt" hasArrow fontSize="x-small" aria-label="Edit prompt">
-              <IconButton
-                aria-label="Edit Prompt"
-                icon={<FontAwesomeIcon icon={faMagicWandSparkles} />}
-                onClick={onOpenPrompt}
-                variant="outline"
-                colorScheme="purple"
-                size="xs"
-              />
-            </Tooltip>
-            <Tooltip label="Download report" hasArrow fontSize="x-small" aria-label="Download report">
-              <IconButton
-                aria-label="Download Report"
-                icon={<FontAwesomeIcon icon={faDownload} />}
-                onClick={handleDownloadReport}
-                variant="outline"
-                colorScheme="green"
-                size="xs"
-                isDisabled={!aiGeneratedReport && !cachedReport}
-              />
-            </Tooltip>
-          </>
-        ) : null}
+        <Tooltip label="Force refresh" hasArrow fontSize="x-small" aria-label="Force refresh">
+          <IconButton
+            aria-label="Generate new report"
+            icon={<FontAwesomeIcon icon={faSyncAlt} />}
+            onClick={handleGenerateReport}
+            isLoading={isGeneratingReport}
+            variant="outline"
+            colorScheme="blue"
+            size="xs"
+          />
+        </Tooltip>
+        <Tooltip label="Edit prompt" hasArrow fontSize="x-small" aria-label="Edit prompt">
+          <IconButton
+            aria-label="Edit Prompt"
+            icon={<FontAwesomeIcon icon={faMagicWandSparkles} />}
+            onClick={onOpenPrompt}
+            variant="outline"
+            colorScheme="purple"
+            size="xs"
+          />
+        </Tooltip>
+        <Tooltip label="Download report" hasArrow fontSize="x-small" aria-label="Download report">
+          <IconButton
+            aria-label="Download Report"
+            icon={<FontAwesomeIcon icon={faDownload} />}
+            onClick={handleDownloadReport}
+            variant="outline"
+            colorScheme="green"
+            size="xs"
+            isDisabled={!aiGeneratedReport && !cachedReport}
+          />
+        </Tooltip>
       </HStack>
       <Box
         height="calc(100% - 40px)"
@@ -167,9 +159,7 @@ export const SummarySection: React.FC<Props> = ({ groupedItems, onOpenSettings }
         position="relative"
         onClick={() => (!isEditing ? setEditing.on() : undefined)}
         cursor={!isEditing ? 'pointer' : 'default'}>
-        {!hasOpenAIToken ? (
-          <ZeroState onOpenSettings={onOpenSettings} />
-        ) : aiGeneratedReport || cachedReport ? (
+        {aiGeneratedReport || cachedReport ? (
           <>
             <ContentView
               isEditing={isEditing}
