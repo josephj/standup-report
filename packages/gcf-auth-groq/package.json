@@ -1,0 +1,41 @@
+{
+  "name": "gcf-auth-groq",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "deploy": "gcloud functions deploy chatCompletions --runtime nodejs20 --trigger-http --allow-unauthenticated --region australia-southeast1 --entry-point chatCompletions",
+    "dev": "NODE_ENV=development functions-framework --target=chatCompletions",
+    "start": "functions-framework --target=chatCompletions",
+    "prestart": "npm run build",
+    "gcp-build": "npm run build"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.4.2",
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.6.0",
+    "groq-sdk": "^0.7.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "typescript": "^5.5.4"
+  }
+}

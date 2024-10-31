@@ -7,7 +7,7 @@ import { ContentView } from './content-view';
 import { PromptView } from './prompt-view';
 import { ZeroState } from './zero-state';
 import type { GroupedWorkItems } from '../lib';
-import { callOpenAI, defaultPrompt } from '../lib';
+import { askAssistant, defaultPrompt } from '../lib';
 
 type Props = {
   groupedItems: GroupedWorkItems;
@@ -75,12 +75,12 @@ export const SummarySection: React.FC<Props> = ({ groupedItems, onOpenSettings }
     const systemPrompt = `Current date and time: ${new Date()}\n\n${customPrompt || defaultPrompt}`;
     const userPrompot = `Work items:\n\n${workItemsText}`;
 
-    await callOpenAI(systemPrompt, userPrompot, {
+    await askAssistant(systemPrompt, userPrompot, {
       onAbort: () => {
         console.log('Fetch aborted');
       },
       onError: error => {
-        console.error('Error calling OpenAI:', error);
+        console.error('Error calling Chat Completion:', error);
         setAiGeneratedReport('Error: Failed to generate report. Please check your API key and try again.');
       },
       onUpdate: response => {
