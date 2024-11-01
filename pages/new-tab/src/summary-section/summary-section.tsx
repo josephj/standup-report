@@ -68,10 +68,19 @@ export const SummarySection: React.FC<Props> = ({ groupedItems }) => {
 
     const { customPrompt } = await chrome.storage.sync.get(['customPrompt']);
 
-    const systemPrompt = `Current date and time: ${new Date()}\n\n${customPrompt || defaultPrompt}`;
-    const userPrompot = `Work items:\n\n${workItemsText}`;
+    const formatContext = cachedReport
+      ? `\n\nFor reference, here's the structure of a previous report (use only as format guidance):\n${cachedReport}`
+      : '';
 
-    await askAssistant(systemPrompt, userPrompot, {
+    const systemPrompt = `Current date and time: ${new Date()}\n\n
+${customPrompt || defaultPrompt}
+${formatContext}\n\n
+Please generate a new report based on the current work items, maintaining a similar structure if a previous report is provided.`;
+    console.log('systemPrompt :', systemPrompt);
+
+    const userPrompt = `Work items:\n\n${workItemsText}`;
+
+    await askAssistant(systemPrompt, userPrompt, {
       onAbort: () => {
         console.log('Fetch aborted');
       },
@@ -89,7 +98,7 @@ export const SummarySection: React.FC<Props> = ({ groupedItems }) => {
     });
 
     setGeneratingReport.off();
-  }, [groupedItems, setEditing, setGeneratingReport]);
+  }, [groupedItems, setEditing, setGeneratingReport, cachedReport]);
 
   const handleDownloadReport = useCallback(() => {
     const content = aiGeneratedReport || cachedReport || '';
