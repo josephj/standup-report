@@ -28,6 +28,11 @@ import {
   TodoList,
   Underline,
   Undo,
+  Image,
+  ImageUpload,
+  ImageResize,
+  ImageToolbar,
+  PasteFromOffice,
 } from 'ckeditor5';
 
 export const editorConfig = {
@@ -53,6 +58,7 @@ export const editorConfig = {
       'indent',
       '|',
       'sourceEditing',
+      'uploadImage',
     ],
     shouldNotGroupWhenFull: false,
   },
@@ -86,6 +92,11 @@ export const editorConfig = {
     TodoList,
     Underline,
     Undo,
+    Image,
+    ImageUpload,
+    ImageResize,
+    ImageToolbar,
+    PasteFromOffice,
   ],
   balloonToolbar: ['bold', 'italic', '|', 'link', '|', 'bulletedList', 'numberedList'],
   heading: {
@@ -156,5 +167,14 @@ export const editorConfig = {
   placeholder: 'Type or paste your content here!',
   table: {
     contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties', 'tableCellProperties'],
+  },
+  image: {
+    toolbar: ['imageTextAlternative', 'toggleImageCaption', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side'],
+    upload: {
+      types: ['jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'],
+    },
+  },
+  clipboard: {
+    handleImages: true,
   },
 };
