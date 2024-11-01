@@ -3,8 +3,8 @@ import { faSyncAlt, faStar, faMagicWandSparkles, faDownload } from '@fortawesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-import { ContentView } from './content-view';
 import { PromptView } from './prompt-view';
+import { RichTextEditor } from '../elements';
 import type { GroupedWorkItems } from '../lib';
 import { askAssistant, defaultPrompt } from '../lib';
 
@@ -14,7 +14,6 @@ type Props = {
 
 export const SummarySection: React.FC<Props> = ({ groupedItems }) => {
   const { isOpen: isPromptOpen, onOpen: onOpenPrompt, onClose: onClosePrompt } = useDisclosure();
-  const [isEditing, setEditing] = useBoolean();
   const [isGeneratingReport, setGeneratingReport] = useBoolean();
   const [customPrompt, setCustomPrompt] = useState<string | null>(null);
   const [aiGeneratedReport, setAiGeneratedReport] = useState<string>('');
@@ -46,14 +45,12 @@ export const SummarySection: React.FC<Props> = ({ groupedItems }) => {
     async (value: string) => {
       setAiGeneratedReport('');
       setCachedReport(value);
-      setEditing.off();
       chrome.storage.local.set({ cachedReport: value });
     },
-    [setEditing],
+    [setCachedReport],
   );
 
   const handleGenerateReport = useCallback(async () => {
-    setEditing.off();
     setGeneratingReport.on();
     setAiGeneratedReport('');
 
@@ -90,15 +87,17 @@ Please generate a new report based on the current work items, maintaining a simi
       },
       onUpdate: response => {
         setAiGeneratedReport(response);
+        setCachedReport(response);
       },
       onComplete: fullResponse => {
         chrome.storage.local.set({ cachedReport: fullResponse });
         setCachedReport(fullResponse);
+        setAiGeneratedReport('');
       },
     });
 
     setGeneratingReport.off();
-  }, [groupedItems, setEditing, setGeneratingReport, cachedReport]);
+  }, [groupedItems, setGeneratingReport, cachedReport]);
 
   const handleDownloadReport = useCallback(() => {
     const content = aiGeneratedReport || cachedReport || '';
@@ -166,14 +165,16 @@ Please generate a new report based on the current work items, maintaining a simi
         bg="white"
         boxShadow="md"
         position="relative"
-        onClick={() => (!isEditing ? setEditing.on() : undefined)}
-        cursor={!isEditing ? 'pointer' : 'default'}>
+        cursor="default">
         {aiGeneratedReport || cachedReport ? (
           <>
-            <ContentView
-              isEditing={isEditing}
-              onSave={handleSaveReport}
+            <RichTextEditor
+              width="100%"
               value={aiGeneratedReport || cachedReport || ''}
+              onChange={handleSaveReport}
+              height="calc(100vh - 200px)"
+              minHeight="300px"
+              isToolbarVisible={false}
             />
             <Flex position="absolute" bottom={4} right={4} gap={2}>
               {isGeneratingReport && (
