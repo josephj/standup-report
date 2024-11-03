@@ -549,9 +549,8 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
                 />
                 <Stack spacing="1">
                   <FormLabel htmlFor="custom-new-tab" mb="0">
-                    Override chrome://newtab/
+                    Display on new tab page
                   </FormLabel>
-                  <FormHelperText mt={0}>Show this page when new tab is opened</FormHelperText>
                 </Stack>
               </HStack>
             </FormControl>

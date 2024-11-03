@@ -1,7 +1,3 @@
-import { Storage } from '@plasmohq/storage';
-
-const storage = new Storage();
-
 const NEW_TAB_URL = 'chrome://newtab/';
 const KEY_OVERRIDE_NEW_TAB = 'overrideNewTab';
 
@@ -14,25 +10,37 @@ const handleTabCreated = (tab: chrome.tabs.Tab) => {
 };
 
 const handleOverrideNewTab = (isOverride: boolean) => {
+  chrome.tabs.onCreated.removeListener(handleTabCreated);
+
   if (isOverride) {
     chrome.tabs.onCreated.addListener(handleTabCreated);
-  } else {
-    chrome.tabs.onCreated.removeListener(handleTabCreated);
   }
 };
 
-chrome.runtime.onInstalled.addListener(async () => {
-  const overrideNewTab = await storage.get(KEY_OVERRIDE_NEW_TAB);
-  if (overrideNewTab === undefined) {
-    await storage.set(KEY_OVERRIDE_NEW_TAB, true);
-  }
+// Initialize on install
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.sync.get(KEY_OVERRIDE_NEW_TAB, result => {
+    const isOverride = result[KEY_OVERRIDE_NEW_TAB] ?? true;
+    chrome.storage.sync.set({ [KEY_OVERRIDE_NEW_TAB]: isOverride }, () => {
+      handleOverrideNewTab(isOverride);
+    });
+  });
 });
 
-chrome.runtime.onMessage.addListener(async message => {
+// Handle messages
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'UPDATE_NEW_TAB_OVERRIDE') {
-    await storage.set(KEY_OVERRIDE_NEW_TAB, message.value);
-    handleOverrideNewTab(message.value);
+    const isOverride = Boolean(message.value);
+    chrome.storage.sync.set({ [KEY_OVERRIDE_NEW_TAB]: isOverride }, () => {
+      handleOverrideNewTab(isOverride);
+      sendResponse({ success: true });
+    });
+    return true; // Required for async response
   }
 });
 
-storage.get(KEY_OVERRIDE_NEW_TAB).then(handleOverrideNewTab);
+// Initialize on startup
+chrome.storage.sync.get(KEY_OVERRIDE_NEW_TAB, result => {
+  const isOverride = result[KEY_OVERRIDE_NEW_TAB] ?? true;
+  handleOverrideNewTab(isOverride);
+});
