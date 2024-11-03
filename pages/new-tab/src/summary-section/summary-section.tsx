@@ -7,6 +7,7 @@ import { PromptView } from './prompt-view';
 import { RichTextEditor } from '../elements';
 import type { GroupedWorkItems } from '../lib';
 import { askAssistant, defaultPrompt } from '../lib';
+import { fetchConfluenceItems } from '../lib/utils/fetch-confluence-items';
 
 type Props = {
   groupedItems: GroupedWorkItems;
@@ -57,7 +58,10 @@ export const SummarySection: React.FC<Props> = ({ groupedItems }) => {
     const workItemsText = Object.entries(groupedItems)
       .map(([group, items]) => {
         const itemsText = items
-          .map(item => `  - ${item.type}: ${item.title} (${item.status || 'No status'}) - Updated: ${item.updatedAt}`)
+          .map(item => {
+            const itemType = item.source === 'confluence' ? 'Confluence' : item.type;
+            return `  - ${itemType}: ${item.title} (${item.status || 'No status'}) - Updated: ${item.updatedAt}`;
+          })
           .join('\n');
         return `${group.charAt(0).toUpperCase() + group.slice(1)}:\n${itemsText}`;
       })

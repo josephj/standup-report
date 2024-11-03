@@ -1,17 +1,11 @@
 export type WorkItem = {
-  type: 'Jira' | 'GitHub' | 'Calendar';
+  id: string;
   title: string;
-  url?: string;
-  updatedAt?: string;
-  isStale: boolean;
+  type: string;
   status?: string;
-  isDraft?: boolean;
-  start?: string;
-  end?: string;
-  eventStatus?: 'confirmed' | 'tentative' | 'cancelled';
-  isAuthor?: boolean;
-  authorAvatarUrl?: string;
-  assigneeAvatarUrl?: string;
+  url: string;
+  updatedAt: string;
+  source?: 'jira' | 'github' | 'gcal' | 'confluence';
 };
 
 export type GroupedWorkItems = {

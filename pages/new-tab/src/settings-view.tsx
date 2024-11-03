@@ -1,28 +1,27 @@
 import { ExternalLinkIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   Button,
-  VStack,
-  Input,
   FormControl,
   FormLabel,
-  useToast,
-  Link,
-  Text,
+  HStack,
+  Input,
   InputGroup,
   InputLeftAddon,
   InputRightElement,
+  Link,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
   Spinner,
   Stack,
-  Switch,
-  FormHelperText,
-  HStack,
   StackDivider,
+  Switch,
+  Text,
+  VStack,
+  useToast,
 } from '@chakra-ui/react';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faGithub, faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
@@ -98,8 +97,8 @@ const systems: SystemConfig[] = [
   },
   {
     name: 'Jira',
-    connectFunction: async (token: string, url?: string) => {
-      if (!url) return false;
+    connectFunction: async (token?: string, url?: string) => {
+      if (!token || !url) return false;
       const fullUrl = url.startsWith('http') ? url : `https://${url}`;
       try {
         const response = await fetch(`${fullUrl}/rest/api/3/myself`, {

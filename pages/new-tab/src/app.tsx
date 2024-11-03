@@ -24,6 +24,7 @@ import { fetchWithCache, fetchGitHubItems, fetchGcalItems, groupWorkItems } from
 import { SettingsView } from './settings-view';
 import { SummarySection } from './summary-section';
 import { WorkItems } from './work-items';
+import { fetchConfluenceItems } from './lib/utils/fetch-confluence-items';
 
 import 'ckeditor5/ckeditor5.css';
 import './app.css';
@@ -68,7 +69,9 @@ const AppContent = () => {
       const jiraItems = await fetchWithCache<WorkItem[]>('jira', fetchJiraItems);
       const githubItems = await fetchWithCache<WorkItem[]>('github', fetchGitHubItems);
       const gcalItems = await fetchWithCache<WorkItem[]>('gcal', fetchGcalItems);
-      setWorkItems([...jiraItems, ...githubItems, ...gcalItems]);
+      const confluenceItems = await fetchWithCache<WorkItem[]>('confluence', fetchConfluenceItems);
+
+      setWorkItems([...jiraItems, ...githubItems, ...gcalItems, ...confluenceItems]);
     } catch (error) {
       console.error('Error fetching work items:', error);
       toast({
@@ -92,14 +95,14 @@ const AppContent = () => {
   const handleSaveSetting = useCallback(async () => {
     await checkTokens();
 
-    await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_gcal']);
+    await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_gcal', 'cache_confluence']);
     await fetchWorkItems();
   }, [checkTokens, fetchWorkItems]);
 
   const handleForceRefresh = useCallback(async () => {
     setLoading.on();
     try {
-      await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_gcal']);
+      await chrome.storage.local.remove(['cache_jira', 'cache_github', 'cache_gcal', 'cache_confluence']);
       await fetchWorkItems();
     } finally {
       setLoading.off();
@@ -169,5 +172,4 @@ const AppContent = () => {
     </Flex>
   );
 };
-
 export const App = withErrorBoundary(withSuspense(AppContent, <div>{t('loading')}</div>), <div>Error Occurred</div>);

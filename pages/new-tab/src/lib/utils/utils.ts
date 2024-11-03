@@ -34,3 +34,8 @@ export async function fetchWithCache<T>(url: string, fetchFunction: () => Promis
     return freshData;
   }
 }
+
+export const isMonday = (): boolean => {
+  const today = new Date();
+  return today.getDay() === 1; // 0 is Sunday, 1 is Monday
+};

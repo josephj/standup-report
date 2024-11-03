@@ -1,65 +1,40 @@
-import { getYesterdayOrLastFriday } from './date';
-import type { GroupedWorkItems, WorkItem } from '../types';
+import type { WorkItem, GroupedWorkItems } from '../types';
+import { isMonday } from './utils';
 
 export const groupWorkItems = (items: WorkItem[], ongoingStatuses: string[]): GroupedWorkItems => {
-  const yesterdayOrLastFriday = getYesterdayOrLastFriday();
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const yesterdayOrLastFridayStart = new Date(yesterdayOrLastFriday);
-  yesterdayOrLastFridayStart.setHours(0, 0, 0, 0);
-  const yesterdayOrLastFridayEnd = new Date(yesterdayOrLastFriday);
-  yesterdayOrLastFridayEnd.setHours(23, 59, 59, 999);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
 
-  return items.reduce<GroupedWorkItems>(
+  if (isMonday()) {
+    yesterday.setDate(yesterday.getDate() - 3); // Go back to Friday
+  } else {
+    yesterday.setDate(yesterday.getDate() - 1);
+  }
+
+  return items.reduce(
     (acc, item) => {
-      const itemDate = new Date(item.type === 'Calendar' ? item.start! : item.updatedAt);
-      const isToday = itemDate > yesterdayOrLastFridayEnd;
-      const isYesterdayOrLastFriday = itemDate >= yesterdayOrLastFridayStart && itemDate < todayStart;
+      const itemDate = new Date(item.updatedAt);
 
-      if (isStaleItem(item)) {
-        acc.stale.push(item);
-      } else if (isOngoingItem(item, isToday, ongoingStatuses)) {
+      // Handle Confluence items
+      if (item.source === 'confluence') {
+        if (itemDate >= yesterday && itemDate < today) {
+          acc.yesterday.push(item);
+        }
+        return acc;
+      }
+
+      // Handle other items as before
+      if (ongoingStatuses.includes(item.status || '')) {
         acc.ongoing.push(item);
-      } else if (isYesterdayItem(item, isYesterdayOrLastFriday, ongoingStatuses)) {
+      } else if (itemDate >= yesterday && itemDate < today) {
         acc.yesterday.push(item);
+      } else if (itemDate < yesterday) {
+        acc.stale.push(item);
       }
 
       return acc;
     },
-    { ongoing: [], yesterday: [], stale: [] },
+    { ongoing: [], yesterday: [], stale: [] } as GroupedWorkItems,
   );
 };
-
-function isStaleItem(item: WorkItem): boolean {
-  return item.isStale && !(item.type === 'GitHub' && item.status === 'Participated');
-}
-
-function isOngoingItem(item: WorkItem, isToday: boolean, ongoingStatuses: string[]): boolean {
-  const status = item.status || '';
-  switch (item.type) {
-    case 'Calendar':
-      return isToday;
-    case 'GitHub':
-      return (
-        ['Open', 'Draft', 'Requested'].includes(status) || (['Merged', 'Participated'].includes(status) && isToday)
-      );
-    case 'Jira':
-      return ongoingStatuses.includes(status);
-    default:
-      return isToday && status !== 'Merged';
-  }
-}
-
-function isYesterdayItem(item: WorkItem, isYesterdayOrLastFriday: boolean, ongoingStatuses: string[]): boolean {
-  const status = item.status || '';
-  switch (item.type) {
-    case 'GitHub':
-      return (
-        (['Merged', 'Participated'].includes(status) && isYesterdayOrLastFriday) || !['Open', 'Draft'].includes(status)
-      );
-    case 'Jira':
-      return !item.isStale && !ongoingStatuses.includes(status) && isYesterdayOrLastFriday;
-    default:
-      return isYesterdayOrLastFriday;
-  }
-}
