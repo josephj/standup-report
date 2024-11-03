@@ -62,12 +62,17 @@ const AppContent = () => {
   }, [checkTokens]);
 
   const fetchWorkItems = useCallback(async () => {
+    const { jiraToken, githubToken, googleCalendarToken } = await chrome.storage.local.get([
+      'jiraToken',
+      'githubToken',
+      'googleCalendarToken',
+    ]);
     setLoading.on();
     setWorkItems([]);
     try {
-      const jiraItems = await fetchWithCache<WorkItem[]>('jira', fetchJiraItems);
-      const githubItems = await fetchWithCache<WorkItem[]>('github', fetchGitHubItems);
-      const gcalItems = await fetchWithCache<WorkItem[]>('gcal', fetchGcalItems);
+      const jiraItems = jiraToken ? await fetchWithCache<WorkItem[]>('jira', fetchJiraItems) : [];
+      const githubItems = githubToken ? await fetchWithCache<WorkItem[]>('github', fetchGitHubItems) : [];
+      const gcalItems = googleCalendarToken ? await fetchWithCache<WorkItem[]>('gcal', fetchGcalItems) : [];
       setWorkItems([...jiraItems, ...githubItems, ...gcalItems]);
     } catch (error) {
       console.error('Error fetching work items:', error);
@@ -157,7 +162,7 @@ const AppContent = () => {
                   </Box>
                 </VStack>
               </Box>
-              <SummarySection groupedItems={groupedItems} onOpenSettings={onOpen} />
+              <SummarySection groupedItems={groupedItems} />
             </Flex>
           </VStack>
         ) : (
