@@ -16,12 +16,16 @@ type Props = {
 
 export const WorkItems = ({ items, emptyMessage }: Props) => {
   const [ongoingStatuses, setOngoingStatuses] = useState(['In Progress']);
+  const [closedStatuses, setClosedStatuses] = useState(['Closed']);
 
   useEffect(() => {
     chrome.storage.local.get('jiraInProgressStatuses', result => {
       setOngoingStatuses(
         result.jiraInProgressStatuses.map((status: { value: string }) => status.value) || ['In Progress'],
       );
+    });
+    chrome.storage.local.get('jiraClosedStatuses', result => {
+      setClosedStatuses(result.jiraClosedStatuses.map((status: { value: string }) => status.value) || ['Closed']);
     });
   }, []);
 
@@ -45,7 +49,8 @@ export const WorkItems = ({ items, emptyMessage }: Props) => {
           boxShadow="sm"
           opacity={
             (item.type === 'Calendar' && new Date(item.end!) < new Date()) ||
-            (item.type === 'GitHub' && item.status === 'Merged')
+            (item.type === 'GitHub' && item.status === 'Merged') ||
+            (item.type === 'Jira' && closedStatuses.includes(item.status || ''))
               ? 0.5
               : 1
           }

@@ -157,7 +157,7 @@ const AppContent = () => {
                   </Box>
                 </VStack>
               </Box>
-              <SummarySection groupedItems={groupedItems} onOpenSettings={onOpen} />
+              <SummarySection groupedItems={groupedItems} />
             </Flex>
           </VStack>
         ) : (
