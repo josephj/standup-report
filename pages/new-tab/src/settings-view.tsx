@@ -20,9 +20,9 @@ import {
   Spinner,
   Stack,
   Switch,
-  FormHelperText,
   HStack,
   StackDivider,
+  Fade,
 } from '@chakra-ui/react';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faGithub, faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
@@ -240,10 +240,11 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
   const [jiraClosedStatuses, setJiraClosedStatuses] = useState<JiraStatus[]>([]);
   const [jiraStatuses, setJiraStatuses] = useState<JiraStatus[]>([]);
   const [gcalExcludeKeywords, setGcalExcludeKeywords] = useState<string[]>(['stand-up', 'standup', 'lunch', 'home']);
-  const [overrideNewTab, setOverrideNewTab] = useState(false);
+  const [isOverrideNewTab, setOverrideNewTab] = useState(false);
   const [githubUseSpecificRepos, setGithubUseSpecificRepos] = useState(false);
   const [githubRepos, setGithubRepos] = useState<{ value: string; label: string }[]>([]);
   const [selectedGithubRepos, setSelectedGithubRepos] = useState<{ value: string; label: string }[]>([]);
+  const [showTick, setShowTick] = useState(false);
 
   const fetchJiraStatuses = useCallback(async (token: string, url: string) => {
     if (!token || !url) return;
@@ -367,9 +368,8 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
       }
     });
 
-    // Load overrideNewTab setting
     chrome.storage.sync.get('overrideNewTab', result => {
-      setOverrideNewTab(result.overrideNewTab ?? true);
+      setOverrideNewTab(result.overrideNewTab ?? false);
     });
 
     // Load GitHub settings
@@ -467,17 +467,11 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     // Save Google Calendar excluded keywords
     chrome.storage.local.set({ gcalExcludeKeywords });
 
-    // Save overrideNewTab setting
-    chrome.storage.sync.set({ overrideNewTab });
-
     // Save GitHub specific settings
     chrome.storage.local.set({
       githubUseSpecificRepos,
       githubSelectedRepos: selectedGithubRepos,
     });
-
-    // Send message to update new tab override
-    chrome.runtime.sendMessage({ type: 'UPDATE_NEW_TAB_OVERRIDE', value: overrideNewTab });
 
     onSave();
     toast({
@@ -530,6 +524,15 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     }
   };
 
+  const handleChangeOverrideNewTab = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isOverride = e.target.checked;
+    setOverrideNewTab(isOverride);
+    chrome.storage.sync.set({ overrideNewTab: isOverride });
+    chrome.runtime.sendMessage({ type: 'UPDATE_NEW_TAB_OVERRIDE', value: isOverride });
+    setShowTick(true);
+    setTimeout(() => setShowTick(false), 2000);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
       <ModalOverlay />
@@ -542,16 +545,15 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
           <VStack spacing={6} divider={<StackDivider borderStyle="dotted" borderColor="gray.500" />}>
             <FormControl display="flex" alignItems="center">
               <HStack spacing="4">
-                <Switch
-                  id="custom-new-tab"
-                  isChecked={overrideNewTab === true}
-                  onChange={e => setOverrideNewTab(e.target.checked)}
-                />
+                <Switch id="custom-new-tab" isChecked={isOverrideNewTab} onChange={handleChangeOverrideNewTab} />
                 <Stack spacing="1">
                   <FormLabel htmlFor="custom-new-tab" mb="0">
                     Display on new tab page
                   </FormLabel>
                 </Stack>
+                <Fade in={showTick} transition={{ enter: { duration: 0.2 }, exit: { duration: 0.1 } }}>
+                  <CheckIcon color="green.500" />
+                </Fade>
               </HStack>
             </FormControl>
 
