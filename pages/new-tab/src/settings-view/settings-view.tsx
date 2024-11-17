@@ -25,14 +25,14 @@ import {
   Fade,
 } from '@chakra-ui/react';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { faGithub, faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
+import { faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
 import { faRobot, faCog } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { debounce } from 'lodash';
 import { useState, useCallback, useEffect } from 'react';
-import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import { GitHubSettings } from './github';
+
+import { GitHubSettings } from './github-settings';
 
 type Props = {
   isOpen: boolean;
@@ -60,11 +60,6 @@ interface SystemConfig {
 }
 
 const systems: SystemConfig[] = [
-  {
-    name: 'GitHub',
-    connectFunction: async () => true,
-    icon: faGithub,
-  },
   {
     name: 'Jira',
     connectFunction: async (token: string, url?: string) => {
@@ -102,7 +97,6 @@ const systems: SystemConfig[] = [
       ],
     },
   },
-
   {
     name: 'Google Calendar',
     connectFunction: async () => {
@@ -485,13 +479,6 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     setTimeout(() => setShowTick(false), 2000);
   };
 
-  const handleGitHubSettingsSave = (data: { useSpecificRepos: boolean; selectedRepos: Option[] }) => {
-    chrome.storage.local.set({
-      githubUseSpecificRepos: data.useSpecificRepos,
-      githubSelectedRepos: data.selectedRepos,
-    });
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
       <ModalOverlay />
@@ -515,6 +502,8 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
                 </Fade>
               </HStack>
             </FormControl>
+
+            <GitHubSettings />
 
             {systems.map(system => (
               <FormControl key={system.name}>
@@ -620,24 +609,6 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
                       Events containing these keywords will be excluded from the report.
                     </Text>
                   </>
-                )}
-
-                {system.name === 'GitHub' && (
-                  <GitHubSettings
-                    initialToken={tokens[system.name]}
-                    onSave={data => {
-                      // Update tokens state
-                      setTokens(prev => ({ ...prev, [system.name]: data.token }));
-                      setInitialTokens(prev => ({ ...prev, [system.name]: data.token }));
-
-                      // Save GitHub settings
-                      chrome.storage.local.set({
-                        githubToken: data.token,
-                        githubUseSpecificRepos: data.useSpecificRepos,
-                        githubSelectedRepos: data.selectedRepos,
-                      });
-                    }}
-                  />
                 )}
               </FormControl>
             ))}
