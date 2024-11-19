@@ -461,6 +461,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: ^0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1)
+      '@hookform/resolvers':
+        specifier: ^3.9.1
+        version: 3.9.1(react-hook-form@7.53.2(react@18.3.1))
       '@instructor-ai/instructor':
         specifier: ^1.5.0
         version: 1.5.0(openai@4.58.2(zod@3.23.8))(zod@3.23.8)
@@ -497,6 +500,9 @@ importers:
       openai:
         specifier: ^4.58.2
         version: 4.58.2(zod@3.23.8)
+      react-hook-form:
+        specifier: ^7.53.2
+        version: 7.53.2(react@18.3.1)
       react-markdown:
         specifier: ^9.0.1
         version: 9.0.1(@types/react@18.3.3)(react@18.3.1)
@@ -506,6 +512,9 @@ importers:
       remark-gfm:
         specifier: ^4.0.0
         version: 4.0.0
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
     devDependencies:
       '@ckeditor/ckeditor5-dev-utils':
         specifier: ^43.0.0
@@ -1932,6 +1941,11 @@ packages:
     resolution: {integrity: sha512-AiXO/bfe9bmxBjxxtYxFAXGZvMaN5s8kO+jBHAJCON8rJoB5YS/D6X7ZNc6XQkuHNmyl4CYaMI1fJ/Gn27RGGw==}
     engines: {node: '>=6'}
     hasBin: true
+
+  '@hookform/resolvers@3.9.1':
+    resolution: {integrity: sha512-ud2HqmGBM0P0IABqoskKWI6PEf6ZDDBZkFqe2Vnl+mTHCEHzr3ISjjZyCwTjC/qpL25JC9aIDkloQejvMeq0ug==}
+    peerDependencies:
+      react-hook-form: ^7.0.0
 
   '@humanwhocodes/config-array@0.11.14':
     resolution: {integrity: sha512-3T8LkOmg45BV5FICb15QQMsyUSWrQ8AygVfC7ZG32zOalnqrilm018ZVCw0eapXux8FtA33q8PSRSstjee3jSg==}
@@ -5870,6 +5884,12 @@ packages:
       '@types/react':
         optional: true
 
+  react-hook-form@7.53.2:
+    resolution: {integrity: sha512-YVel6fW5sOeedd1524pltpHX+jgU2u3DSDtXEaBORNdqiNrsX/nUI/iGXONegttg0mJVnfrIkiV0cmTU6Oo2xw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      react: ^16.8.0 || ^17 || ^18 || ^19
+
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
@@ -8813,6 +8833,10 @@ snapshots:
       protobufjs: 7.4.0
       yargs: 17.7.2
     optional: true
+
+  '@hookform/resolvers@3.9.1(react-hook-form@7.53.2(react@18.3.1))':
+    dependencies:
+      react-hook-form: 7.53.2(react@18.3.1)
 
   '@humanwhocodes/config-array@0.11.14':
     dependencies:
@@ -13445,6 +13469,10 @@ snapshots:
       use-sidecar: 1.1.2(@types/react@18.3.3)(react@18.3.1)
     optionalDependencies:
       '@types/react': 18.3.3
+
+  react-hook-form@7.53.2(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   react-is@16.13.1: {}
 
