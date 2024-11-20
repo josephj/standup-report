@@ -25,7 +25,7 @@ import {
   Fade,
 } from '@chakra-ui/react';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { faGoogle, faJira } from '@fortawesome/free-brands-svg-icons';
+import { faGoogle } from '@fortawesome/free-brands-svg-icons';
 import { faRobot, faCog } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { debounce } from 'lodash';
@@ -33,6 +33,7 @@ import { useState, useCallback, useEffect } from 'react';
 import CreatableSelect from 'react-select/creatable';
 
 import { GitHubSettings } from './github-settings';
+import { JiraSettings } from './jira-settings';
 
 type Props = {
   isOpen: boolean;
@@ -60,43 +61,6 @@ interface SystemConfig {
 }
 
 const systems: SystemConfig[] = [
-  {
-    name: 'Jira',
-    connectFunction: async (token: string, url?: string) => {
-      if (!url) return false;
-      const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-      try {
-        const response = await fetch(`${fullUrl}/rest/api/3/myself`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
-        });
-        return response.ok;
-      } catch (error) {
-        console.error('Error validating Jira token:', error);
-        return false;
-      }
-    },
-    tokenGuideUrl: 'https://id.atlassian.com/manage-profile/security/api-tokens',
-    requiresUrl: true,
-    icon: faJira,
-    jiraStatuses: {
-      inProgress: [
-        { value: 'Pending', label: 'Pending' },
-        { value: 'In Progress', label: 'In Progress' },
-        { value: 'In Review', label: 'In Review' },
-        { value: 'In Development', label: 'In Development' },
-        { value: 'Code Review', label: 'Code Review' },
-        { value: 'Testing', label: 'Testing' },
-      ],
-      closed: [
-        { value: 'Closed', label: 'Closed' },
-        { value: 'Done', label: 'Done' },
-        { value: 'Resolved', label: 'Resolved' },
-      ],
-    },
-  },
   {
     name: 'Google Calendar',
     connectFunction: async () => {
@@ -199,67 +163,9 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
   const [initialUrls, setInitialUrls] = useState<Record<string, string>>({});
   const toast = useToast();
   const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
-  const [jiraInProgressStatuses, setJiraInProgressStatuses] = useState<JiraStatus[]>([]);
-  const [jiraClosedStatuses, setJiraClosedStatuses] = useState<JiraStatus[]>([]);
-  const [jiraStatuses, setJiraStatuses] = useState<JiraStatus[]>([]);
   const [gcalExcludeKeywords, setGcalExcludeKeywords] = useState<string[]>(['stand-up', 'standup', 'lunch', 'home']);
   const [isOverrideNewTab, setOverrideNewTab] = useState(false);
   const [showTick, setShowTick] = useState(false);
-
-  const fetchJiraStatuses = useCallback(async (token: string, url: string) => {
-    if (!token || !url) return;
-
-    const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-    try {
-      const projectsResponse = await fetch(`${fullUrl}/rest/api/3/project/search?maxResults=100`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      });
-
-      if (!projectsResponse.ok) {
-        console.error('Failed to fetch Jira projects');
-        return;
-      }
-
-      const projects = await projectsResponse.json();
-      const activeProjectIds = projects.values
-        .filter((project: any) => project.isPrivate !== true && project.archived !== true)
-        .map((project: any) => project.id);
-
-      // Fetch statuses for active projects
-      const statusesResponse = await fetch(`${fullUrl}/rest/api/3/status`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      });
-
-      if (!statusesResponse.ok) {
-        console.error('Failed to fetch Jira statuses');
-        return;
-      }
-
-      const allStatuses = await statusesResponse.json();
-
-      const activeStatuses = allStatuses.filter(
-        (status: any) => status.scope && status.scope.project && activeProjectIds.includes(status.scope.project.id),
-      );
-
-      const formattedStatuses = Array.from(new Set(activeStatuses.map((status: any) => status.name))).map(name => ({
-        value: name,
-        label: name,
-      }));
-
-      setJiraStatuses(formattedStatuses);
-
-      // Save fetched statuses to storage
-      chrome.storage.local.set({ jiraStatuses: formattedStatuses });
-    } catch (error) {
-      console.error('Error fetching Jira statuses:', error);
-    }
-  }, []);
 
   useEffect(() => {
     systems.forEach(system => {
@@ -286,42 +192,10 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
       });
     });
 
-    // 檢查 Google Calendar 的連接狀態
     chrome.identity.getAuthToken({ interactive: false }, function (token) {
       setGoogleCalendarConnected(!!token);
     });
 
-    // Load Jira statuses from storage or fetch if not available
-    chrome.storage.local.get(['jiraStatuses', 'jiraToken', 'jiraUrl'], result => {
-      if (result.jiraStatuses) {
-        setJiraStatuses(result.jiraStatuses);
-      } else if (result.jiraToken && result.jiraUrl) {
-        fetchJiraStatuses(result.jiraToken, result.jiraUrl);
-      }
-    });
-
-    // Load Jira statuses from storage or set defaults
-    chrome.storage.local.get(['jiraInProgressStatuses', 'jiraClosedStatuses'], result => {
-      if (result.jiraInProgressStatuses) {
-        setJiraInProgressStatuses(result.jiraInProgressStatuses);
-      } else {
-        const defaultInProgressStatuses =
-          systems
-            .find(s => s.name === 'Jira')
-            ?.jiraStatuses?.inProgress.filter(
-              status => status.value === 'In Review' || status.value === 'In Development',
-            ) || [];
-        setJiraInProgressStatuses(defaultInProgressStatuses);
-      }
-      if (result.jiraClosedStatuses) {
-        setJiraClosedStatuses(result.jiraClosedStatuses);
-      } else {
-        const defaultClosedStatuses = systems.find(s => s.name === 'Jira')?.jiraStatuses?.closed || [];
-        setJiraClosedStatuses(defaultClosedStatuses);
-      }
-    });
-
-    // Load Google Calendar excluded keywords from storage
     chrome.storage.local.get('gcalExcludeKeywords', result => {
       if (result.gcalExcludeKeywords) {
         setGcalExcludeKeywords(result.gcalExcludeKeywords);
@@ -331,7 +205,7 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
     chrome.storage.sync.get('overrideNewTab', result => {
       setOverrideNewTab(result.overrideNewTab ?? false);
     });
-  }, [fetchJiraStatuses]);
+  }, []);
 
   const validateToken = useCallback(
     debounce(async (system: SystemConfig, token: string, url?: string) => {
@@ -412,22 +286,11 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
       }
     });
 
-    // Save Jira statuses
-    chrome.storage.local.set({
-      jiraInProgressStatuses,
-      jiraClosedStatuses,
-    });
-
     // Save Google Calendar excluded keywords
     chrome.storage.local.set({ gcalExcludeKeywords });
 
-    // Save GitHub specific settings
-    chrome.storage.local.set({
-      githubUseSpecificRepos: data.useSpecificRepos,
-      githubSelectedRepos: data.selectedRepos,
-    });
-
     onSave();
+
     toast({
       title: 'Settings saved successfully',
       status: 'success',
@@ -504,114 +367,91 @@ export const SettingsView = ({ isOpen, onClose, onSave }: Props) => {
             </FormControl>
 
             <GitHubSettings />
+            <JiraSettings />
 
-            {systems.map(system => (
-              <FormControl key={system.name}>
-                <FormLabel>
-                  <FontAwesomeIcon icon={system.icon} fixedWidth /> {system.name}
-                </FormLabel>
-                {system.useOAuth ? (
-                  <Button
-                    onClick={() =>
-                      (system.name === 'Google Calendar' ? googleCalendarConnected : system.isConnected)
-                        ? handleOAuthDisconnect(system)
-                        : handleOAuthConnect(system)
-                    }
-                    size="sm"
-                    colorScheme={
-                      (system.name === 'Google Calendar' ? googleCalendarConnected : system.isConnected)
-                        ? 'red'
-                        : 'gray'
-                    }
-                    variant="outline"
-                    isLoading={isValidating[system.name]}>
-                    {(system.name === 'Google Calendar' ? googleCalendarConnected : system.isConnected)
-                      ? 'Disconnect'
-                      : 'Connect'}
-                  </Button>
-                ) : (
-                  <Stack spacing={2}>
-                    {system.requiresUrl && (
+            {systems
+              .filter(system => system.name !== 'Jira')
+              .map(system => (
+                <FormControl key={system.name}>
+                  <FormLabel>
+                    <FontAwesomeIcon icon={system.icon} fixedWidth /> {system.name}
+                  </FormLabel>
+                  {system.useOAuth ? (
+                    <Button
+                      onClick={() =>
+                        (system.name === 'Google Calendar' ? googleCalendarConnected : system.isConnected)
+                          ? handleOAuthDisconnect(system)
+                          : handleOAuthConnect(system)
+                      }
+                      size="sm"
+                      colorScheme={
+                        (system.name === 'Google Calendar' ? googleCalendarConnected : system.isConnected)
+                          ? 'red'
+                          : 'gray'
+                      }
+                      variant="outline"
+                      isLoading={isValidating[system.name]}>
+                      {(system.name === 'Google Calendar' ? googleCalendarConnected : system.isConnected)
+                        ? 'Disconnect'
+                        : 'Connect'}
+                    </Button>
+                  ) : (
+                    <Stack spacing={2}>
+                      {system.requiresUrl && (
+                        <InputGroup>
+                          <InputLeftAddon>https://</InputLeftAddon>
+                          <Input
+                            value={urls[system.name] || ''}
+                            onChange={e => handleUrlChange(system, e.target.value)}
+                            placeholder={`your-domain.atlassian.net`}
+                          />
+                        </InputGroup>
+                      )}
                       <InputGroup>
-                        <InputLeftAddon>https://</InputLeftAddon>
                         <Input
-                          value={urls[system.name] || ''}
-                          onChange={e => handleUrlChange(system, e.target.value)}
-                          placeholder={`your-domain.atlassian.net`}
+                          type="password"
+                          value={tokens[system.name] || ''}
+                          onChange={e => handleTokenChange(system, e.target.value)}
+                          placeholder={system.placeholder || `Enter ${system.name} API Token`}
+                          isDisabled={system.requiresUrl && !urls[system.name]}
                         />
+                        <InputRightElement>
+                          {isValidating[system.name] && <Spinner size="sm" />}
+                          {!isValidating[system.name] && tokenValidation[system.name] === true && (
+                            <CheckIcon color="green.500" />
+                          )}
+                          {!isValidating[system.name] && tokenValidation[system.name] === false && (
+                            <CloseIcon color="red.500" />
+                          )}
+                        </InputRightElement>
                       </InputGroup>
-                    )}
-                    <InputGroup>
-                      <Input
-                        type="password"
-                        value={tokens[system.name] || ''}
-                        onChange={e => handleTokenChange(system, e.target.value)}
-                        placeholder={system.placeholder || `Enter ${system.name} API Token`}
-                        isDisabled={system.requiresUrl && !urls[system.name]}
+                    </Stack>
+                  )}
+                  <Text fontSize="sm" mt={1}>
+                    <Link href={system.tokenGuideUrl} isExternal color="blue.500">
+                      {system.useOAuth ? 'Learn more' : `Get ${system.name} token`} <ExternalLinkIcon mx="2px" />
+                    </Link>
+                  </Text>
+
+                  {system.name === 'Google Calendar' && (
+                    <>
+                      <FormLabel mt={4} fontSize="small">
+                        Excluded events
+                      </FormLabel>
+                      <CreatableSelect
+                        isMulti
+                        options={gcalExcludeKeywords.map(keyword => ({ value: keyword, label: keyword }))}
+                        value={gcalExcludeKeywords.map(keyword => ({ value: keyword, label: keyword }))}
+                        onChange={selected => setGcalExcludeKeywords(selected.map(item => item.value))}
+                        placeholder="Add or select keywords to exclude..."
                       />
-                      <InputRightElement>
-                        {isValidating[system.name] && <Spinner size="sm" />}
-                        {!isValidating[system.name] && tokenValidation[system.name] === true && (
-                          <CheckIcon color="green.500" />
-                        )}
-                        {!isValidating[system.name] && tokenValidation[system.name] === false && (
-                          <CloseIcon color="red.500" />
-                        )}
-                      </InputRightElement>
-                    </InputGroup>
-                  </Stack>
-                )}
-                <Text fontSize="sm" mt={1}>
-                  <Link href={system.tokenGuideUrl} isExternal color="blue.500">
-                    {system.useOAuth ? 'Learn more' : `Get ${system.name} token`} <ExternalLinkIcon mx="2px" />
-                  </Link>
-                </Text>
-
-                {system.name === 'Jira' && (
-                  <>
-                    <FormLabel mt={4} fontSize="small">
-                      Jira In Progress Statuses
-                    </FormLabel>
-                    <CreatableSelect
-                      isMulti
-                      options={jiraStatuses}
-                      value={jiraInProgressStatuses}
-                      onChange={selected => setJiraInProgressStatuses(selected as JiraStatus[])}
-                      placeholder="Add or select statuses..."
-                    />
-
-                    <FormLabel mt={4} fontSize="small">
-                      Jira Closed Statuses
-                    </FormLabel>
-                    <CreatableSelect
-                      isMulti
-                      options={jiraStatuses}
-                      value={jiraClosedStatuses}
-                      onChange={selected => setJiraClosedStatuses(selected as JiraStatus[])}
-                      placeholder="Add or select statuses..."
-                    />
-                  </>
-                )}
-
-                {system.name === 'Google Calendar' && (
-                  <>
-                    <FormLabel mt={4} fontSize="small">
-                      Excluded events
-                    </FormLabel>
-                    <CreatableSelect
-                      isMulti
-                      options={gcalExcludeKeywords.map(keyword => ({ value: keyword, label: keyword }))}
-                      value={gcalExcludeKeywords.map(keyword => ({ value: keyword, label: keyword }))}
-                      onChange={selected => setGcalExcludeKeywords(selected.map(item => item.value))}
-                      placeholder="Add or select keywords to exclude..."
-                    />
-                    <Text fontSize="xs" mt={1} color="gray.500">
-                      Events containing these keywords will be excluded from the report.
-                    </Text>
-                  </>
-                )}
-              </FormControl>
-            ))}
+                      <Text fontSize="xs" mt={1} color="gray.500">
+                        Events containing these keywords will be excluded from the report.
+                      </Text>
+                    </>
+                  )}
+                </FormControl>
+              ))}
             <Button onClick={handleSave} colorScheme="blue">
               Save
             </Button>
