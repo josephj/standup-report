@@ -1,7 +1,5 @@
 import { ExternalLinkIcon } from '@chakra-ui/icons';
-import { FormControl, FormLabel, Text, Link, Stack, Button, useToast, Spinner } from '@chakra-ui/react';
-import { faGoogle } from '@fortawesome/free-brands-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { FormControl, FormLabel, Text, Link, Stack, Button, useToast, Spinner, FormHelperText } from '@chakra-ui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -100,16 +98,20 @@ export const GCalSettings = () => {
     <form onSubmit={handleSubmit(handleSave)}>
       <Stack spacing={4}>
         <FormControl>
-          <FormLabel>
-            <FontAwesomeIcon icon={faGoogle} fixedWidth /> Google Calendar
-          </FormLabel>
+          <FormLabel>Google Authorization</FormLabel>
           <Button
             onClick={isConnected ? handleDisconnect : handleConnect}
             size="sm"
             colorScheme={isConnected ? 'red' : 'gray'}
             variant="outline"
             isLoading={isConnecting}>
-            {isConnecting ? <Spinner size="sm" /> : isConnected ? 'Disconnect' : 'Connect'}
+            {isConnecting ? (
+              <Spinner size="sm" />
+            ) : isConnected ? (
+              'Disconnect from Google Calendar'
+            ) : (
+              'Connect to Google Calendar'
+            )}
           </Button>
           <Text fontSize="sm" mt={1}>
             <Link href={TOKEN_GUIDE_URL} isExternal color="blue.500">
@@ -119,7 +121,7 @@ export const GCalSettings = () => {
         </FormControl>
 
         <FormControl>
-          <FormLabel fontSize="small">Excluded events</FormLabel>
+          <FormLabel>Excluded events</FormLabel>
           <Controller
             name="excludeKeywords"
             control={control}
@@ -136,9 +138,7 @@ export const GCalSettings = () => {
               );
             }}
           />
-          <Text fontSize="xs" mt={1} color="gray.500">
-            Events containing these keywords will be excluded from the report.
-          </Text>
+          <FormHelperText>Events containing these keywords will be excluded from the report.</FormHelperText>
         </FormControl>
 
         <Button type="submit" colorScheme="blue" size="sm">
