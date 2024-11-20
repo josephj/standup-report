@@ -18,7 +18,7 @@ export const groupWorkItems = (items: WorkItem[], ongoingStatuses: string[]): Gr
 
       if (isStaleItem(item)) {
         acc.stale.push(item);
-      } else if (isOngoingItem(item, isToday)) {
+      } else if (isOngoingItem(item, isToday, ongoingStatuses)) {
         acc.ongoing.push(item);
       } else if (isYesterdayItem(item, isYesterdayOrLastFriday, ongoingStatuses)) {
         acc.yesterday.push(item);
@@ -34,12 +34,13 @@ function isStaleItem(item: WorkItem): boolean {
   return item.isStale && !(item.type === 'GitHub' && item.status === 'Participated');
 }
 
-function isOngoingItem(item: WorkItem, isToday: boolean): boolean {
+function isOngoingItem(item: WorkItem, isToday: boolean, ongoingStatuses: string[]): boolean {
   const status = item.status || '';
   switch (item.type) {
-    case 'Jira':
     case 'Calendar':
       return isToday;
+    case 'Jira':
+      return isToday || ongoingStatuses.includes(status);
     case 'GitHub':
       return (
         ['Open', 'Draft', 'Requested'].includes(status) || (['Merged', 'Participated'].includes(status) && isToday)
