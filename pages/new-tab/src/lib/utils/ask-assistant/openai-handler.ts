@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+
 import { type AskAssistantOptions } from './types';
 
 export const handleOpenAIStream = async (
@@ -14,9 +15,12 @@ export const handleOpenAIStream = async (
     dangerouslyAllowBrowser: true,
   });
 
+  const { openaiModel } = await chrome.storage.local.get('openaiModel');
+  const model = openaiModel || 'gpt-4o-mini-2024-07-18';
+
   const stream = await openai.chat.completions.create(
     {
-      model: 'gpt-4o-mini-2024-07-18',
+      model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
