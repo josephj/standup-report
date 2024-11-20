@@ -13,8 +13,6 @@ import {
   Button,
   useToast,
 } from '@chakra-ui/react';
-import { faGithub } from '@fortawesome/free-brands-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { debounce } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
@@ -125,9 +123,7 @@ export const GitHubSettings = () => {
     <form onSubmit={handleSubmit(handleSave)}>
       <Stack spacing={4}>
         <FormControl>
-          <FormLabel>
-            <FontAwesomeIcon icon={faGithub} fixedWidth /> GitHub
-          </FormLabel>
+          <FormLabel>Token</FormLabel>
           <InputGroup>
             <Controller
               name="token"
@@ -149,7 +145,7 @@ export const GitHubSettings = () => {
 
         <div>
           <FormControl display="flex" alignItems="center">
-            <FormLabel htmlFor="github-specific-repos" mb="0" fontSize="small">
+            <FormLabel htmlFor="github-specific-repos" mb="0">
               Select specific repos
             </FormLabel>
             <Controller

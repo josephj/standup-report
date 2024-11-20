@@ -13,8 +13,6 @@ import {
   Button,
   useToast,
 } from '@chakra-ui/react';
-import { faJira } from '@fortawesome/free-brands-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { debounce } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
@@ -136,31 +134,31 @@ export const JiraSettings = () => {
     <form onSubmit={handleSubmit(handleSave)} style={{ width: '100%' }}>
       <Stack spacing={4}>
         <FormControl>
-          <FormLabel>
-            <FontAwesomeIcon icon={faJira} fixedWidth /> Jira
-          </FormLabel>
-          <Stack spacing={2}>
-            <InputGroup>
-              <InputLeftAddon>https://</InputLeftAddon>
-              <Controller
-                name="url"
-                control={control}
-                render={({ field }) => <Input {...field} placeholder="your-domain.atlassian.net" />}
-              />
-            </InputGroup>
-            <InputGroup>
-              <Controller
-                name="token"
-                control={control}
-                render={({ field }) => <Input type="password" {...field} placeholder="Enter Jira API Token" />}
-              />
-              <InputRightElement>
-                {isValidating && <Spinner size="sm" />}
-                {!isValidating && isValid === true && <CheckIcon color="green.500" />}
-                {!isValidating && isValid === false && <CloseIcon color="red.500" />}
-              </InputRightElement>
-            </InputGroup>
-          </Stack>
+          <FormLabel>URL</FormLabel>
+          <InputGroup>
+            <InputLeftAddon>https://</InputLeftAddon>
+            <Controller
+              name="url"
+              control={control}
+              render={({ field }) => <Input {...field} placeholder="your-domain.atlassian.net" />}
+            />
+          </InputGroup>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel>Token</FormLabel>
+          <InputGroup>
+            <Controller
+              name="token"
+              control={control}
+              render={({ field }) => <Input type="password" {...field} placeholder="Enter Jira API Token" />}
+            />
+            <InputRightElement>
+              {isValidating && <Spinner size="sm" />}
+              {!isValidating && isValid === true && <CheckIcon color="green.500" />}
+              {!isValidating && isValid === false && <CloseIcon color="red.500" />}
+            </InputRightElement>
+          </InputGroup>
           <Text fontSize="sm" mt={1}>
             <Link href={TOKEN_GUIDE_URL} isExternal color="blue.500">
               Get Jira token <ExternalLinkIcon mx="2px" />
@@ -169,7 +167,7 @@ export const JiraSettings = () => {
         </FormControl>
 
         <FormControl>
-          <FormLabel fontSize="small">In Progress Statuses</FormLabel>
+          <FormLabel>In Progress Statuses</FormLabel>
           <Controller
             name="inProgressStatuses"
             control={control}
@@ -186,7 +184,7 @@ export const JiraSettings = () => {
         </FormControl>
 
         <FormControl>
-          <FormLabel fontSize="small">Closed Statuses</FormLabel>
+          <FormLabel>Closed Statuses</FormLabel>
           <Controller
             name="closedStatuses"
             control={control}
