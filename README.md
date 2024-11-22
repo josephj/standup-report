@@ -40,6 +40,8 @@ If script was run successfully you will see ```Updated versions to <new_version>
 pnpm zip
 ```
 
+It will create a zip file in the `dist-zip` directory.
+
 ### Important files and folders
 
 - `chrome-extension/manifest.js` - Manifest file for the extension.
