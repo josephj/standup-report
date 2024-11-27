@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 import manifest from './manifest.json';
-import { version } from './package.json';
 
 export default defineConfig({
   plugins: [
@@ -22,8 +21,5 @@ export default defineConfig({
     alias: {
       '@': '/src',
     },
-  },
-  define: {
-    __APP_VERSION__: JSON.stringify(version),
   },
 });
