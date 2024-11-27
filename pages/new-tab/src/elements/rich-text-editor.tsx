@@ -1,7 +1,7 @@
 import type { BoxProps } from '@chakra-ui/react';
 import { Box, useBoolean } from '@chakra-ui/react';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
-import { ClassicEditor } from 'ckeditor5';
+import { ClassicEditor } from '@ckeditor/ckeditor5-build-classic';
 import { useRef, useEffect, useMemo, useState } from 'react';
 
 import { HtmlContent } from '../html-content';
@@ -60,6 +60,23 @@ export const RichTextEditor = ({
   const handleReady = (editor: ClassicEditor) => {
     editorInstanceRef.current = editor;
     editor.setData(value !== undefined ? value : internalValue);
+
+    editor.plugins.get('FileRepository').createUploadAdapter = loader => {
+      return {
+        upload: async () => {
+          const file = await loader.file;
+          return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve({
+                default: reader.result,
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        },
+      };
+    };
   };
 
   const handleBlur = () => {
