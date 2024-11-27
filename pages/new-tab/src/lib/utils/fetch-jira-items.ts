@@ -5,6 +5,7 @@ import { getPreviousWorkday } from './date';
 import type { JiraIssue, WorkItem } from '../types';
 
 type JiraStatus = { value: string; label: string };
+type DateRange = { startDate?: Date; endDate?: Date };
 
 const FIELDS = ['id', 'key', 'summary', 'status', 'updated', 'assignee'];
 const DEFAULT_ONGOING_STATUSES = ['In Review', 'In Development'];
@@ -20,7 +21,7 @@ const normalizeIssue = (baseUrl: string, issue: JiraIssue): WorkItem => ({
   url: `${baseUrl}/browse/${issue.key}`,
 });
 
-const fetchIssues = async ({ statuses, updatedAfter }: { statuses: JiraStatus[]; updatedAfter?: Date }) => {
+const fetchIssues = async ({ statuses, dateRange }: { statuses: JiraStatus[]; dateRange?: DateRange }) => {
   const { jiraUrl, jiraToken } = await chrome.storage.local.get(['jiraUrl', 'jiraToken']);
 
   if (!jiraUrl || !jiraToken) {
@@ -37,8 +38,16 @@ const fetchIssues = async ({ statuses, updatedAfter }: { statuses: JiraStatus[];
   const statusString = statuses.length
     ? `status IN (${statuses.map(({ value }) => `"${value}"`).join(', ')})`
     : undefined;
-  const updateAfterString = updatedAfter ? `updated >= "${format(updatedAfter, 'yyyy-MM-dd')}"` : undefined;
-  const jql = `${['assignee = currentUser()', statusString, updateAfterString].filter(Boolean).join(' AND ')} ORDER BY updated DESC`;
+
+  const dateRangeString = dateRange
+    ? `updated >= "${format(dateRange.startDate || new Date(), 'yyyy-MM-dd')}"${
+        dateRange.endDate ? ` AND updated <= "${format(dateRange.endDate, 'yyyy-MM-dd')}"` : ''
+      }`
+    : undefined;
+
+  const jql = `${['assignee = currentUser()', statusString, dateRangeString]
+    .filter(Boolean)
+    .join(' AND ')} ORDER BY updated DESC`;
 
   const response = await axios.get<{ issues: JiraIssue[] }>(apiUrl, {
     headers,
@@ -48,7 +57,7 @@ const fetchIssues = async ({ statuses, updatedAfter }: { statuses: JiraStatus[];
   return response.data.issues;
 };
 
-export const fetchJiraItems = async (): Promise<WorkItem[]> => {
+export const fetchJiraItems = async (dateRange?: DateRange): Promise<WorkItem[]> => {
   const { jiraUrl, jiraInProgressStatuses, jiraClosedStatuses } = await chrome.storage.local.get([
     'jiraUrl',
     'jiraInProgressStatuses',
@@ -67,8 +76,14 @@ export const fetchJiraItems = async (): Promise<WorkItem[]> => {
 
   try {
     const [ongoingResult, closedResult] = await Promise.allSettled([
-      fetchIssues({ statuses: ongoingStatuses }),
-      fetchIssues({ statuses: closedStatuses, updatedAfter: previousWorkday }),
+      fetchIssues({
+        statuses: ongoingStatuses,
+        dateRange: dateRange || undefined,
+      }),
+      fetchIssues({
+        statuses: closedStatuses,
+        dateRange: dateRange || { startDate: previousWorkday },
+      }),
     ]);
 
     const ongoingIssues = ongoingResult.status === 'fulfilled' ? ongoingResult.value : [];
