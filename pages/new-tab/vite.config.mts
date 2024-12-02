@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-
+import { defineConfig } from 'vite';
 import { withPageConfig } from '@extension/vite-config';
 
 import { version } from './package.json';
@@ -7,7 +7,7 @@ import { version } from './package.json';
 const rootDir = resolve(__dirname);
 const srcDir = resolve(rootDir, 'src');
 
-export default withPageConfig({
+export default defineConfig(withPageConfig({
   resolve: {
     alias: {
       '@src': srcDir,
