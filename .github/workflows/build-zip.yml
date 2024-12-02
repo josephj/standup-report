@@ -11,11 +11,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: false
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Install dependencies (with workspaces)
+        run: pnpm install --frozen-lockfile --prefer-offline --recursive
       - run: pnpm build
       - uses: actions/upload-artifact@v4
         with:
