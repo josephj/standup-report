@@ -308,8 +308,8 @@ importers:
         specifier: ^0.8.2
         version: 0.8.2
       tsx:
-        specifier: ^4.16.2
-        version: 4.16.2
+        specifier: ^4.19.2
+        version: 4.19.2
 
   pages/content:
     dependencies:
@@ -415,7 +415,7 @@ importers:
         version: 7.0.3
       postcss-load-config:
         specifier: ^6.0.1
-        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.16.2)(yaml@2.4.5)
+        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.19.2)(yaml@2.4.5)
 
   pages/new-tab:
     dependencies:
@@ -545,7 +545,7 @@ importers:
         version: 2.29.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint@8.57.0)
       postcss-load-config:
         specifier: ^6.0.1
-        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.16.2)(yaml@2.4.5)
+        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.19.2)(yaml@2.4.5)
       sass:
         specifier: 1.77.8
         version: 1.77.8
@@ -576,7 +576,7 @@ importers:
         version: 7.0.3
       postcss-load-config:
         specifier: ^6.0.1
-        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.16.2)(yaml@2.4.5)
+        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.19.2)(yaml@2.4.5)
 
   pages/popup:
     dependencies:
@@ -604,7 +604,7 @@ importers:
         version: 7.0.3
       postcss-load-config:
         specifier: ^6.0.1
-        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.16.2)(yaml@2.4.5)
+        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.19.2)(yaml@2.4.5)
 
   pages/side-panel:
     dependencies:
@@ -629,7 +629,7 @@ importers:
         version: 7.0.3
       postcss-load-config:
         specifier: ^6.0.1
-        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.16.2)(yaml@2.4.5)
+        version: 6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.19.2)(yaml@2.4.5)
 
 packages:
 
@@ -3727,6 +3727,7 @@ packages:
   eslint@8.57.0:
     resolution: {integrity: sha512-dZ6+mexnaTIbSBZWgou51U6OmzIhYM2VcNdtiTtI7qPNZm35Akpr0f6vtw3w1Kmn5PYo+tZVfh13WrhpS6oLqQ==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
 
   esm@3.2.25:
@@ -6619,8 +6620,8 @@ packages:
   tslib@2.6.3:
     resolution: {integrity: sha512-xNvxJEOUiWPGhUuUdQgAJPKOOJfGnIyKySOc09XkKsgdUV/3E2zvwZYdejjmRgPCgcym1juLH3226yA7sEFJKQ==}
 
-  tsx@4.16.2:
-    resolution: {integrity: sha512-C1uWweJDgdtX2x600HjaFaucXTilT7tgUZHbOE4+ypskZ1OP8CRCSDkCxG6Vya9EwaFIVagWwpaVAn5wzypaqQ==}
+  tsx@4.19.2:
+    resolution: {integrity: sha512-pOUl6Vo2LUq/bSa8S5q7b91cgNSjctn9ugq/+Mvow99qW6x/UZYwzxy/3NmqoT66eHYfCVvFvACC58UBPFf28g==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -13206,13 +13207,13 @@ snapshots:
       postcss: 8.4.39
       ts-node: 10.9.2(@swc/core@1.6.13)(@types/node@20.16.5)(typescript@5.5.4)
 
-  postcss-load-config@6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.16.2)(yaml@2.4.5):
+  postcss-load-config@6.0.1(jiti@1.21.6)(postcss@8.4.45)(tsx@4.19.2)(yaml@2.4.5):
     dependencies:
       lilconfig: 3.1.2
     optionalDependencies:
       jiti: 1.21.6
       postcss: 8.4.45
-      tsx: 4.16.2
+      tsx: 4.19.2
       yaml: 2.4.5
 
   postcss-loader@4.3.0(postcss@8.4.45)(webpack@5.92.1(@swc/core@1.6.13)(esbuild@0.23.0)):
@@ -14459,9 +14460,9 @@ snapshots:
 
   tslib@2.6.3: {}
 
-  tsx@4.16.2:
+  tsx@4.19.2:
     dependencies:
-      esbuild: 0.21.5
+      esbuild: 0.23.0
       get-tsconfig: 4.7.5
     optionalDependencies:
       fsevents: 2.3.3
