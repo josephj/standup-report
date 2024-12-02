@@ -60,33 +60,32 @@ export const ModelSettings = () => {
   const token = watch('token');
   const selectedModel = watch('model');
 
-  const handleValidateToken = useCallback(
-    debounce(async (token: string) => {
-      if (!token) {
-        setValid(null);
-        setModels([]);
-        return;
-      }
+  const validateTokenDebounced = debounce(async (token: string) => {
+    if (!token) {
+      setValid(null);
+      setModels([]);
+      return;
+    }
 
-      setValidating(true);
-      try {
-        const isValid = await validateToken(token);
-        setValid(isValid);
-        if (isValid) {
-          const modelOptions = await fetchOpenAIModels(token);
-          setModels(modelOptions);
-        } else {
-          setModels([]);
-        }
-      } catch (error) {
-        setValid(false);
+    setValidating(true);
+    try {
+      const isValid = await validateToken(token);
+      setValid(isValid);
+      if (isValid) {
+        const modelOptions = await fetchOpenAIModels(token);
+        setModels(modelOptions);
+      } else {
         setModels([]);
-      } finally {
-        setValidating(false);
       }
-    }, 500),
-    [],
-  );
+    } catch (error) {
+      setValid(false);
+      setModels([]);
+    } finally {
+      setValidating(false);
+    }
+  }, 500);
+
+  const handleValidateToken = useCallback((token: string) => validateTokenDebounced(token), [validateTokenDebounced]);
 
   useEffect(() => {
     setValue('token', openaiToken);

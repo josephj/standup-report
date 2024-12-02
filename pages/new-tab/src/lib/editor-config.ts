@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {
   AccessibilityHelp,
   Autoformat,
@@ -29,6 +30,7 @@ import {
   Underline,
   Undo,
 } from 'ckeditor5';
+/* eslint-enable */
 
 export const editorConfig = {
   toolbar: {

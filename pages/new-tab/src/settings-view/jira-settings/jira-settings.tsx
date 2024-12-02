@@ -80,8 +80,8 @@ export const JiraSettings = () => {
   const token = useWatch({ control, name: 'token' });
   const url = useWatch({ control, name: 'url' });
 
-  const handleValidateToken = useCallback(
-    debounce(async (token: string, url: string) => {
+  const handleValidateToken = useCallback((token: string, url: string) => {
+    const validateTokenDebounced = debounce(async () => {
       if (!token || !url) {
         setValid(null);
         return;
@@ -101,9 +101,10 @@ export const JiraSettings = () => {
       } finally {
         setValidating(false);
       }
-    }, 500),
-    [],
-  );
+    }, 500);
+
+    validateTokenDebounced();
+  }, []);
 
   useEffect(() => {
     setValue('token', jiraToken);

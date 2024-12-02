@@ -1,6 +1,7 @@
 import type { BoxProps } from '@chakra-ui/react';
 import { Box, useBoolean } from '@chakra-ui/react';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
+// eslint-disable-next-line
 import { ClassicEditor } from 'ckeditor5';
 import { useRef, useEffect, useMemo, useState } from 'react';
 
