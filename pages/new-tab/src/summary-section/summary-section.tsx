@@ -73,7 +73,6 @@ export const SummarySection: React.FC<Props> = ({ groupedItems }) => {
 ${customPrompt || defaultPrompt}
 ${formatContext}\n\n
 Please generate a new report based on the current work items, maintaining a similar structure if a previous report is provided.`;
-    console.log('systemPrompt :', systemPrompt);
 
     const userPrompt = `Work items:\n\n${workItemsText}`;
 
