@@ -2,7 +2,7 @@ import type { Response } from '@google-cloud/functions-framework';
 import type { Groq } from 'groq-sdk';
 import type { ChatCompletion } from 'groq-sdk/resources/chat/completions';
 import type { ChatCompletionOptions } from './types';
-import { retrieveRelevantChunks, storeEmbeddings, splitText, generateEmbedding } from './embedding-service';
+import { retrieveRelevantChunks, storeEmbeddings, splitText } from './embedding-service';
 import { v4 as uuidv4 } from 'uuid';
 import { get_encoding } from 'tiktoken';
 
@@ -74,131 +74,31 @@ const countTokens = (text: string): number => {
   }
 };
 
-async function kMeansClustering(embeddings: number[][], k: number): Promise<number[][]> {
-  if (embeddings.length <= k) {
-    return embeddings.map((_, index) => [index]);
-  }
+const simplifyChunk = async (groq: Groq, chunk: string): Promise<string> => {
+  const response = await groq.chat.completions.create({
+    messages: [
+      {
+        role: 'system',
+        content: `Simplify the following text by:
+- Removing redundant or repetitive phrases and words
+- Maintaining all unique information, facts, and data points
+- Preserving the original meaning and context
+- Keeping names, technical terms, and specific details intact
+- Using clearer sentence structures where possible
+Do not summarize or omit unique information.`,
+      },
+      {
+        role: 'user',
+        content: chunk,
+      },
+    ],
+    model: 'mixtral-8x7b-32768',
+    temperature: 0.3,
+    max_tokens: 1500,
+  });
 
-  const dimensions = embeddings[0].length;
-
-  const centroids: number[][] = [];
-  const usedIndices = new Set<number>();
-
-  while (centroids.length < k) {
-    const idx = Math.floor(Math.random() * embeddings.length);
-    if (!usedIndices.has(idx)) {
-      centroids.push([...embeddings[idx]]);
-      usedIndices.add(idx);
-    }
-  }
-
-  const distance = (a: number[], b: number[]): number => {
-    let sum = 0;
-    for (let i = 0; i < dimensions; i++) {
-      sum += Math.pow(a[i] - b[i], 2);
-    }
-    return Math.sqrt(sum);
-  };
-
-  let clusters: number[][] = Array.from({ length: k }, () => []);
-  let changed = true;
-  let iterations = 0;
-  const MAX_ITERATIONS = 10;
-
-  while (changed && iterations < MAX_ITERATIONS) {
-    changed = false;
-    iterations++;
-
-    clusters = Array.from({ length: k }, () => []);
-
-    for (let i = 0; i < embeddings.length; i++) {
-      let minDistance = Infinity;
-      let clusterIndex = 0;
-
-      for (let j = 0; j < k; j++) {
-        const dist = distance(embeddings[i], centroids[j]);
-        if (dist < minDistance) {
-          minDistance = dist;
-          clusterIndex = j;
-        }
-      }
-
-      clusters[clusterIndex].push(i);
-    }
-
-    for (let i = 0; i < k; i++) {
-      if (clusters[i].length === 0) continue;
-
-      const newCentroid = new Array(dimensions).fill(0);
-
-      for (const pointIndex of clusters[i]) {
-        for (let d = 0; d < dimensions; d++) {
-          newCentroid[d] += embeddings[pointIndex][d];
-        }
-      }
-
-      for (let d = 0; d < dimensions; d++) {
-        newCentroid[d] /= clusters[i].length;
-      }
-
-      let centroidChanged = false;
-      for (let d = 0; d < dimensions; d++) {
-        if (Math.abs(newCentroid[d] - centroids[i][d]) > 0.001) {
-          centroidChanged = true;
-          break;
-        }
-      }
-
-      if (centroidChanged) {
-        centroids[i] = newCentroid;
-        changed = true;
-      }
-    }
-  }
-
-  return clusters;
-}
-
-function selectRepresentatives(chunks: string[], clusters: number[][], embeddings: number[][]): string[] {
-  const representatives: string[] = [];
-
-  for (const cluster of clusters) {
-    if (cluster.length === 0) continue;
-
-    const dimensions = embeddings[0].length;
-    const centroid = new Array(dimensions).fill(0);
-
-    for (const idx of cluster) {
-      for (let d = 0; d < dimensions; d++) {
-        centroid[d] += embeddings[idx][d];
-      }
-    }
-
-    for (let d = 0; d < dimensions; d++) {
-      centroid[d] /= cluster.length;
-    }
-
-    let minDistance = Infinity;
-    let closestIndex = cluster[0];
-
-    for (const idx of cluster) {
-      let distance = 0;
-      for (let d = 0; d < dimensions; d++) {
-        distance += Math.pow(embeddings[idx][d] - centroid[d], 2);
-      }
-      distance = Math.sqrt(distance);
-
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestIndex = idx;
-      }
-    }
-
-    representatives.push(chunks[closestIndex]);
-  }
-
-  return representatives;
-}
+  return response.choices[0].message.content ?? '';
+};
 
 export const handleLongContentResponse = async (
   res: Response,
@@ -209,6 +109,7 @@ export const handleLongContentResponse = async (
   try {
     const MAX_TOTAL_TOKENS = 4500;
     const TOKEN_MARGIN = 500;
+    const CHUNK_SIZE = 4000;
     const conversationId = uuidv4();
 
     const userMessages = options.messages.filter(msg => msg.role === 'user');
@@ -224,51 +125,34 @@ export const handleLongContentResponse = async (
     const availableTokens = MAX_TOTAL_TOKENS - systemTokens - TOKEN_MARGIN;
 
     if (isInitialTranscript && userMessageTokens > availableTokens) {
-      console.log(`Processing initial long transcript (${userMessageTokens} tokens) using clustering`);
+      console.log(`Processing initial long transcript (${userMessageTokens} tokens) using parallel simplification`);
 
-      const chunks = splitText(lastUserMessage);
+      const chunks = splitText(lastUserMessage, CHUNK_SIZE);
       console.log(`Split transcript into ${chunks.length} chunks`);
-
-      const embeddingPromises = chunks.map(chunk => generateEmbedding(chunk));
-      const embeddings = await Promise.all(embeddingPromises);
 
       await storeEmbeddings(conversationId, chunks, 24);
 
-      const avgChunkTokens = userMessageTokens / chunks.length;
-      const optimalClusters = Math.min(Math.max(3, Math.floor(availableTokens / avgChunkTokens)), chunks.length, 10);
+      const simplified = await Promise.all(chunks.map(chunk => simplifyChunk(groq, chunk)));
 
-      console.log(`Using ${optimalClusters} clusters for representation`);
-
-      const clusters = await kMeansClustering(embeddings, optimalClusters);
-
-      const representativeChunks = selectRepresentatives(chunks, clusters, embeddings);
-
-      const includesFirst = representativeChunks.includes(chunks[0]);
-      const includesLast = representativeChunks.includes(chunks[chunks.length - 1]);
-
-      if (!includesFirst) representativeChunks.unshift(chunks[0]);
-      if (!includesLast) representativeChunks.push(chunks[chunks.length - 1]);
-
-      let processedContent = representativeChunks.join('\n\n');
+      let processedContent = simplified.join('\n\n');
       let processedTokens = countTokens(processedContent);
 
       if (processedTokens > availableTokens) {
-        console.log(`Representative chunks exceed limit: ${processedTokens}/${availableTokens}. Reducing...`);
-        while (representativeChunks.length > 2 && processedTokens > availableTokens) {
-          representativeChunks.splice(1, 1);
-          processedContent = representativeChunks.join('\n\n');
-          processedTokens = countTokens(processedContent);
-        }
+        console.log(
+          `Combined simplified text still exceeds limit: ${processedTokens}/${availableTokens}. Simplifying again...`,
+        );
+        processedContent = await simplifyChunk(groq, processedContent);
+        processedTokens = countTokens(processedContent);
+      }
 
-        if (processedTokens > availableTokens) {
-          const encoder = get_encoding('cl100k_base');
-          try {
-            const tokens = encoder.encode(processedContent);
-            const truncatedTokens = tokens.slice(0, availableTokens);
-            processedContent = new TextDecoder().decode(truncatedTokens);
-          } finally {
-            encoder.free();
-          }
+      if (processedTokens > availableTokens) {
+        const encoder = get_encoding('cl100k_base');
+        try {
+          const tokens = encoder.encode(processedContent);
+          const truncatedTokens = tokens.slice(0, availableTokens);
+          processedContent = new TextDecoder().decode(truncatedTokens);
+        } finally {
+          encoder.free();
         }
       }
 
