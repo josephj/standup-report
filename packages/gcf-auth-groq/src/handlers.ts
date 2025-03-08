@@ -75,29 +75,38 @@ const countTokens = (text: string): number => {
 };
 
 const simplifyChunk = async (groq: Groq, chunk: string): Promise<string> => {
+  const inputTokens = countTokens(chunk);
+  console.log(`Starting summarization of chunk with ${inputTokens} tokens`);
+
   const response = await groq.chat.completions.create({
     messages: [
       {
         role: 'system',
-        content: `Simplify the following text by:
-- Removing redundant or repetitive phrases and words
-- Maintaining all unique information, facts, and data points
-- Preserving the original meaning and context
-- Keeping names, technical terms, and specific details intact
-- Using clearer sentence structures where possible
-Do not summarize or omit unique information.`,
+        content: `Summarize the following text by:
+- Extracting and condensing the key points, main ideas, and essential information
+- Maintaining critical facts, data points, and technical details
+- Preserving names and specific references
+- Using concise language while ensuring clarity
+- Aiming for approximately 50% length reduction
+The summary should be comprehensive yet concise.`,
       },
       {
         role: 'user',
         content: chunk,
       },
     ],
-    model: 'mixtral-8x7b-32768',
-    temperature: 0.3,
-    max_tokens: 1500,
+    model: 'llama-3.3-70b-versatile',
+    temperature: 0,
+    max_tokens: 3000,
   });
 
-  return response.choices[0].message.content ?? '';
+  const result = response.choices[0].message.content ?? '';
+  const outputTokens = countTokens(result);
+  console.log(
+    `Summarization complete: ${inputTokens} -> ${outputTokens} tokens (${Math.round((outputTokens / inputTokens) * 100)}% of original)`,
+  );
+
+  return result;
 };
 
 export const handleLongContentResponse = async (
@@ -106,10 +115,13 @@ export const handleLongContentResponse = async (
   options: ChatCompletionOptions,
   origin: string | undefined,
 ) => {
+  const startTime = Date.now();
+  const TIMEOUT_WARNING = 500000; // 8.3 minutes in milliseconds
+
   try {
-    const MAX_TOTAL_TOKENS = 4500;
-    const TOKEN_MARGIN = 500;
-    const CHUNK_SIZE = 4000;
+    const MAX_TOTAL_TOKENS = 50000;
+    const TOKEN_MARGIN = 1000;
+    const CHUNK_SIZE = 25000;
     const conversationId = uuidv4();
 
     const userMessages = options.messages.filter(msg => msg.role === 'user');
@@ -125,22 +137,37 @@ export const handleLongContentResponse = async (
     const availableTokens = MAX_TOTAL_TOKENS - systemTokens - TOKEN_MARGIN;
 
     if (isInitialTranscript && userMessageTokens > availableTokens) {
-      console.log(`Processing initial long transcript (${userMessageTokens} tokens) using parallel simplification`);
+      console.log(`Processing initial long transcript (${userMessageTokens} tokens) using parallel summarization`);
+
+      // Add timeout check
+      const checkTimeout = () => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed > TIMEOUT_WARNING) {
+          console.warn(`Warning: Processing time ${elapsed}ms approaching function timeout`);
+        }
+      };
 
       const chunks = splitText(lastUserMessage, CHUNK_SIZE);
-      console.log(`Split transcript into ${chunks.length} chunks`);
+      checkTimeout();
+
+      console.log(`Split transcript into ${chunks.length} chunks of ~${CHUNK_SIZE} tokens each`);
+
+      chunks.forEach((chunk, index) => {
+        const chunkTokens = countTokens(chunk);
+        console.log(`Chunk ${index + 1}: ${chunkTokens} tokens`);
+      });
 
       await storeEmbeddings(conversationId, chunks, 24);
 
+      console.log('Starting parallel chunk summarization...');
       const simplified = await Promise.all(chunks.map(chunk => simplifyChunk(groq, chunk)));
 
       let processedContent = simplified.join('\n\n');
       let processedTokens = countTokens(processedContent);
+      console.log(`Combined summarized chunks: ${processedTokens} tokens`);
 
       if (processedTokens > availableTokens) {
-        console.log(
-          `Combined simplified text still exceeds limit: ${processedTokens}/${availableTokens}. Simplifying again...`,
-        );
+        console.log(`Combined text still exceeds limit: ${processedTokens}/${availableTokens}. Summarizing again...`);
         processedContent = await simplifyChunk(groq, processedContent);
         processedTokens = countTokens(processedContent);
       }
@@ -257,25 +284,8 @@ export const handleLongContentResponse = async (
       }
     }
   } catch (error) {
-    console.error('Error in embedding processing:', error);
-    const err = error as Error;
-
-    if (options.stream) {
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
-        Connection: 'keep-alive',
-        'Access-Control-Allow-Origin': origin || '*',
-      });
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-      res.end();
-    } else {
-      res.status(500).json({
-        error: {
-          message: `Embedding processing failed: ${err.message}`,
-          type: 'embedding_error',
-        },
-      });
-    }
+    const elapsed = Date.now() - startTime;
+    console.error(`Error after ${elapsed}ms:`, error);
+    throw error;
   }
 };

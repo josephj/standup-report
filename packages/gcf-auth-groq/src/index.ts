@@ -10,7 +10,7 @@ import type { ErrorResponse } from './types';
 import { handleStreamResponse, handleRegularResponse, handleLongContentResponse } from './handlers';
 import { cleanupExpiredEmbeddings } from './embedding-service';
 
-const TOKEN_LIMIT = 4500;
+const TOKEN_LIMIT = 50000;
 
 const requiredEnvVars = ['GROQ_API_KEY', 'SUPABASE_URL', 'SUPABASE_KEY'];
 for (const envVar of requiredEnvVars) {

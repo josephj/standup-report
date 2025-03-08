@@ -24,19 +24,49 @@ export function splitText(text: string, chunkSize: number = EMBED_CHUNK_SIZE): s
     const sentences = text.split(/(?<=[.!?])\s+/);
     const chunks: string[] = [];
     let currentChunk: string[] = [];
-    let currentTokens: number[] = [];
+    let currentTokenCount = 0;
 
     for (const sentence of sentences) {
-      const sentenceTokens = Array.from(encoder.encode(sentence));
+      const sentenceTokens = encoder.encode(sentence);
+      const sentenceTokenCount = sentenceTokens.length;
 
-      if ([...currentTokens, ...sentenceTokens].length > chunkSize && currentChunk.length > 0) {
-        chunks.push(currentChunk.join(' '));
-        currentChunk = [sentence];
-        currentTokens = sentenceTokens;
-      } else {
-        currentChunk.push(sentence);
-        currentTokens = [...currentTokens, ...sentenceTokens];
+      if (sentenceTokenCount >= chunkSize) {
+        if (currentChunk.length > 0) {
+          chunks.push(currentChunk.join(' '));
+          currentChunk = [];
+          currentTokenCount = 0;
+        }
+
+        // 對於超長句子，直接按原始文本長度進行切分
+        const words = sentence.split(/\s+/);
+        let currentWords: string[] = [];
+        let currentWordTokens = 0;
+
+        for (const word of words) {
+          const wordTokens = encoder.encode(word).length;
+          if (currentWordTokens + wordTokens > chunkSize && currentWords.length > 0) {
+            chunks.push(currentWords.join(' '));
+            currentWords = [];
+            currentWordTokens = 0;
+          }
+          currentWords.push(word);
+          currentWordTokens += wordTokens;
+        }
+
+        if (currentWords.length > 0) {
+          chunks.push(currentWords.join(' '));
+        }
+        continue;
       }
+
+      if (currentTokenCount + sentenceTokenCount > chunkSize && currentChunk.length > 0) {
+        chunks.push(currentChunk.join(' '));
+        currentChunk = [];
+        currentTokenCount = 0;
+      }
+
+      currentChunk.push(sentence);
+      currentTokenCount += sentenceTokenCount;
     }
 
     if (currentChunk.length > 0) {
