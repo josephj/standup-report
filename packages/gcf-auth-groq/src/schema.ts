@@ -13,4 +13,5 @@ export const schema = z.object({
   stream: z.boolean().default(false),
   temperature: z.number().min(0, 'Temperature must be at least 0').max(2, 'Temperature must be at most 2').default(0),
   max_tokens: z.number().optional(),
+  reasoning_format: z.string().optional(),
 });

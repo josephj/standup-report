@@ -56,12 +56,13 @@ export const chatCompletions: HttpFunction = async (req, res) => {
       throw new Error(result.error.errors[0].message);
     }
 
-    const { model, messages, stream, temperature, max_tokens } = result.data;
+    const { model, messages, stream, temperature, max_tokens, reasoning_format } = result.data;
     const options = {
       model,
       messages,
       temperature,
       stream,
+      ...(reasoning_format && { reasoning_format }),
       ...(max_tokens && { max_tokens }),
     };
 
