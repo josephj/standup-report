@@ -1,16 +1,17 @@
 import type { HttpFunction } from '@google-cloud/functions-framework';
 import * as admin from 'firebase-admin';
 import { Groq } from 'groq-sdk';
+import type { ChatCompletionCreateParams } from 'groq-sdk/resources/chat/completions';
 import 'dotenv/config';
 import { get_encoding } from 'tiktoken';
 
 import { corsMiddleware } from './middlewares';
 import { schema } from './schema';
 import type { ErrorResponse } from './types';
-import { handleStreamResponse, handleRegularResponse, handleLongContentResponse } from './handlers';
+import { handleStreamResponse, handleRegularResponse } from './handlers';
 import { cleanupExpiredEmbeddings } from './embedding-service';
 
-const TOKEN_LIMIT = 50000;
+// const TOKEN_LIMIT = 50000;
 
 const requiredEnvVars = ['GROQ_API_KEY', 'SUPABASE_URL', 'SUPABASE_KEY'];
 for (const envVar of requiredEnvVars) {
@@ -64,20 +65,33 @@ export const chatCompletions: HttpFunction = async (req, res) => {
       stream,
       ...(reasoning_format && { reasoning_format }),
       ...(max_tokens && { max_tokens }),
-    };
+    } as ChatCompletionCreateParams;
 
-    const totalTokens = messages.reduce((sum, msg) => sum + countTokens(msg.content), 0);
+    // const totalTokens = messages.reduce((sum, msg) => {
+    //   if (typeof msg.content === 'string') {
+    //     return sum + countTokens(msg.content);
+    //   }
+    //   return (
+    //     sum +
+    //     msg.content.reduce((contentSum, part) => {
+    //       if (part.type === 'text') {
+    //         return contentSum + countTokens(part.text);
+    //       }
+    //       return contentSum;
+    //     }, 0)
+    //   );
+    // }, 0);
 
-    if (totalTokens <= TOKEN_LIMIT) {
-      if (stream) {
-        await handleStreamResponse(res, groq, options, req.headers.origin);
-      } else {
-        await handleRegularResponse(res, groq, options);
-      }
+    // if (totalTokens <= TOKEN_LIMIT) {
+    if (stream) {
+      await handleStreamResponse(res, groq, options, req.headers.origin);
     } else {
-      console.log(`Request exceeds token limit (${totalTokens}/${TOKEN_LIMIT}), using embedding processing`);
-      await handleLongContentResponse(res, groq, options, req.headers.origin);
+      await handleRegularResponse(res, groq, options);
     }
+    // } else {
+    //   console.log(`Request exceeds token limit (${totalTokens}/${TOKEN_LIMIT}), using embedding processing`);
+    //   await handleLongContentResponse(res, groq, options, req.headers.origin);
+    // }
   } catch (error) {
     console.error('Error:', error);
 
