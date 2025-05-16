@@ -25,16 +25,37 @@ if (process.env.NODE_ENV !== 'development') {
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const countTokens = (text: string): number => {
+const countTokens = (content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>): number => {
+  let textToCount = '';
+
+  if (typeof content === 'string') {
+    textToCount = content;
+  } else {
+    // For array content, count both text and image_url content
+    textToCount = content
+      .map(item => {
+        if (item.type === 'text' && item.text) {
+          return item.text;
+        }
+        if (item.type === 'image_url' && item.image_url?.url) {
+          // For image_url, we count the base64 string
+          return item.image_url.url;
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join(' ');
+  }
+
   try {
     const encoder = get_encoding('cl100k_base');
-    const tokens = encoder.encode(text);
+    const tokens = encoder.encode(textToCount);
     const count = tokens.length;
     encoder.free();
     return count;
   } catch (error) {
     console.warn('Tiktoken error, falling back to estimate:', error);
-    return Math.ceil(text.length / 4);
+    return Math.ceil(textToCount.length / 4);
   }
 };
 

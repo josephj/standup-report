@@ -6,7 +6,20 @@ export const schema = z.object({
     .array(
       z.object({
         role: z.enum(['system', 'user', 'assistant']),
-        content: z.string(),
+        content: z.union([
+          z.string(),
+          z.array(
+            z.object({
+              type: z.enum(['text', 'image_url']),
+              text: z.string().optional(),
+              image_url: z
+                .object({
+                  url: z.string(),
+                })
+                .optional(),
+            }),
+          ),
+        ]),
       }),
     )
     .min(1, 'Messages array cannot be empty'),
