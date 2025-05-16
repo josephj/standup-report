@@ -1,8 +1,4 @@
 import { z } from 'zod';
-import type {
-  ChatCompletionUserMessageParam,
-  ChatCompletionContentPartImage,
-} from 'groq-sdk/resources/chat/completions';
 
 export const schema = z.object({
   model: z.string().default('llama-3.1-8b-instant'),
@@ -10,23 +6,7 @@ export const schema = z.object({
     .array(
       z.object({
         role: z.enum(['system', 'user', 'assistant']),
-        content: z.union([
-          z.string(),
-          z.array(
-            z.union([
-              z.object({
-                type: z.literal('text'),
-                text: z.string(),
-              }),
-              z.object({
-                type: z.literal('image_url'),
-                image_url: z.object({
-                  url: z.string(),
-                }),
-              }) satisfies z.ZodType<ChatCompletionContentPartImage>,
-            ]),
-          ) satisfies z.ZodType<ChatCompletionUserMessageParam['content']>,
-        ]),
+        content: z.string(),
       }),
     )
     .min(1, 'Messages array cannot be empty'),
