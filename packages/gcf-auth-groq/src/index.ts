@@ -58,8 +58,9 @@ export const chatCompletions: HttpFunction = async (req, res) => {
     }
 
     const { model, messages, stream, temperature, max_tokens, reasoning_format } = result.data;
+    const actualModel = model === 'qwen-qwq-32b' ? 'qwen/qwen3-32b' : model;
     const options = {
-      model,
+      model: actualModel,
       messages,
       temperature,
       stream,
